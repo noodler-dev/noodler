@@ -12,6 +12,7 @@ class RawSpan(models.Model):
     end_time = models.DateTimeField(null=True, blank=True)
     attributes = JSONField()
     ingested_at = models.DateTimeField(auto_now_add=True)
+    projected = models.BooleanField(default=False)
 
     class Meta:
         constraints = [
