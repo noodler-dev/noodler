@@ -1,5 +1,5 @@
 import json
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError
 from django.http import JsonResponse
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.csrf import csrf_exempt
