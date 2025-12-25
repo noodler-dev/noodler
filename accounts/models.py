@@ -26,7 +26,7 @@ class Membership(models.Model):
 
     user_profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
-    role = models.CharField(max_length=255, choices=ROLE_CHOICES)
+    role = models.CharField(max_length=255, choices=ROLE_CHOICES, default="member")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
