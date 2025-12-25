@@ -5,51 +5,87 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Observation',
+            name="Observation",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('span_id', models.CharField(max_length=16)),
-                ('parent_span_id', models.CharField(blank=True, max_length=16, null=True)),
-                ('name', models.CharField(max_length=255)),
-                ('kind', models.CharField(max_length=32)),
-                ('start_time', models.DateTimeField()),
-                ('end_time', models.DateTimeField(blank=True, null=True)),
-                ('attributes', models.JSONField()),
-                ('projected_at', models.DateTimeField(auto_now_add=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("span_id", models.CharField(max_length=16)),
+                (
+                    "parent_span_id",
+                    models.CharField(blank=True, max_length=16, null=True),
+                ),
+                ("name", models.CharField(max_length=255)),
+                ("kind", models.CharField(max_length=32)),
+                ("start_time", models.DateTimeField()),
+                ("end_time", models.DateTimeField(blank=True, null=True)),
+                ("attributes", models.JSONField()),
+                ("projected_at", models.DateTimeField(auto_now_add=True)),
             ],
         ),
         migrations.CreateModel(
-            name='Trace',
+            name="Trace",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('trace_id', models.CharField(max_length=32)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("trace_id", models.CharField(max_length=32)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
             ],
         ),
         migrations.CreateModel(
-            name='Generation',
+            name="Generation",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('provider', models.CharField(max_length=64)),
-                ('model', models.CharField(max_length=128)),
-                ('input', models.JSONField()),
-                ('output', models.JSONField(blank=True, null=True)),
-                ('prompt_tokens', models.IntegerField(blank=True, null=True)),
-                ('completion_tokens', models.IntegerField(blank=True, null=True)),
-                ('observation', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='generation', to='telemetry.observation')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("provider", models.CharField(max_length=64)),
+                ("model", models.CharField(max_length=128)),
+                ("input", models.JSONField()),
+                ("output", models.JSONField(blank=True, null=True)),
+                ("prompt_tokens", models.IntegerField(blank=True, null=True)),
+                ("completion_tokens", models.IntegerField(blank=True, null=True)),
+                (
+                    "observation",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="generation",
+                        to="telemetry.observation",
+                    ),
+                ),
             ],
         ),
         migrations.AddField(
-            model_name='observation',
-            name='trace',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='observations', to='telemetry.trace'),
+            model_name="observation",
+            name="trace",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="observations",
+                to="telemetry.trace",
+            ),
         ),
     ]

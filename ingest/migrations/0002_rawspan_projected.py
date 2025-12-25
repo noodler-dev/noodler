@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('ingest', '0001_initial'),
+        ("ingest", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='rawspan',
-            name='projected',
+            model_name="rawspan",
+            name="projected",
             field=models.BooleanField(default=False),
         ),
     ]

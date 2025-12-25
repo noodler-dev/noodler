@@ -1,6 +1,7 @@
 from django.db import models
 from accounts.models import Organization
 
+
 class Project(models.Model):
     name = models.CharField(max_length=255)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
@@ -8,6 +9,7 @@ class Project(models.Model):
 
     def __str__(self):
         return self.name
+
 
 class ApiKey(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
