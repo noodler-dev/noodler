@@ -14,7 +14,7 @@ class Project(models.Model):
 class ApiKey(models.Model):
     name = models.CharField(max_length=255)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    hashed_key = models.CharField(max_length=255, null=True, blank=True)
+    hashed_key = models.CharField(max_length=255, unique=True, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     revoked_at = models.DateTimeField(null=True, blank=True)
 
