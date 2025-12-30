@@ -3,7 +3,7 @@ from django.db import IntegrityError
 from django.http import JsonResponse
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.csrf import csrf_exempt
-from .models import RawTrace
+from .models import RawTraceOLD
 from .validators import validate_span
 
 

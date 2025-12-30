@@ -3,6 +3,15 @@ from django.db.models import JSONField
 from projects.models import Project
 
 
+class RawTrace(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    received_at = models.DateTimeField()
+    payload = JSONField()
+
+    def __str__(self):
+        return f"RawTrace for {self.project.name}"
+
+
 class Trace(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     trace_id = models.CharField(max_length=32)

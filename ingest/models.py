@@ -3,7 +3,7 @@ from django.db.models import JSONField
 from projects.models import Project
 
 
-class RawTrace(models.Model):
+class RawTraceOLD(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     received_at = models.DateTimeField()
     payload = JSONField()
