@@ -130,6 +130,6 @@ STATIC_URL = "static/"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "noodler.auth.APIKeyAuthentication",
+        "projects.auth.APIKeyAuthentication",
     ],
 }

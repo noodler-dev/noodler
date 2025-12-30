@@ -1,7 +1,7 @@
 from datetime import datetime
 from rest_framework.decorators import api_view, authentication_classes
 from rest_framework.response import Response
-from noodler.auth import APIKeyAuthentication
+from projects.auth import APIKeyAuthentication
 from traces.models import RawTrace
 
 @api_view(['GET'])
