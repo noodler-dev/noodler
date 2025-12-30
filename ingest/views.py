@@ -3,7 +3,7 @@ from django.db import IntegrityError
 from django.http import JsonResponse
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.csrf import csrf_exempt
-from .models import RawSpan
+from .models import RawTrace
 from .validators import validate_span
 
 
@@ -25,18 +25,18 @@ def ingest_spans(request):
         try:
             validate_span(span)
 
-            RawSpan.objects.create(
-                trace_id=span["trace_id"],
-                span_id=span["span_id"],
-                parent_span_id=span.get("parent_span_id"),
-                name=span["name"],
-                kind=span["kind"],
-                start_time=parse_datetime(span["start_time"]),
-                end_time=parse_datetime(span.get("end_time"))
-                if span.get("end_time")
-                else None,
-                attributes=span["attributes"],
-            )
+            # RawTrace.objects.create(
+            #     trace_id=span["trace_id"],
+            #     span_id=span["span_id"],
+            #     parent_span_id=span.get("parent_span_id"),
+            #     name=span["name"],
+            #     kind=span["kind"],
+            #     start_time=parse_datetime(span["start_time"]),
+            #     end_time=parse_datetime(span.get("end_time"))
+            #     if span.get("end_time")
+            #     else None,
+            #     attributes=span["attributes"],
+            # )
             accepted += 1
 
         except IntegrityError:

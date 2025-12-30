@@ -1,4 +1,4 @@
 from django.contrib import admin
-from .models import RawSpan
+from .models import RawTrace
 
-admin.site.register(RawSpan)
+admin.site.register(RawTrace)
