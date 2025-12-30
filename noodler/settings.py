@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "ingest",
     "projects",
     "telemetry",
+    "traces",
 ]
 
 MIDDLEWARE = [
