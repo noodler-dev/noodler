@@ -43,7 +43,6 @@ INSTALLED_APPS = [
     "accounts",
     "ingest",
     "projects",
-    "telemetry",
     "traces",
 ]
 
