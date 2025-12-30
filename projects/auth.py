@@ -14,7 +14,7 @@ class APIKeyAuthentication(BaseAuthentication):
         hashed = hashlib.sha256(raw_key.encode()).hexdigest()
 
         try:
-            key = ApiKey.objects.select_related("project", "project__organization").get(
+            key = ApiKey.objects.select_related("project").get(
                 hashed_key=hashed,
                 revoked_at__isnull=True,
             )

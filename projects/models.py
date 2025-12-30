@@ -1,3 +1,4 @@
+import hashlib
 from django.db import models
 from accounts.models import Organization
 
@@ -17,6 +18,16 @@ class ApiKey(models.Model):
     hashed_key = models.CharField(max_length=255, unique=True, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     revoked_at = models.DateTimeField(null=True, blank=True)
+    create_dummy_key = models.BooleanField(
+        default=False,
+        help_text="Create a dummy key for testing purposes. Key is `dummy-key`.",
+    )
+
+    def save(self, *args, **kwargs):
+        if self.create_dummy_key and not self.hashed_key:
+            # TODO: Turn this into a function
+            self.hashed_key = hashlib.sha256("dummy-key".encode()).hexdigest()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name

@@ -1,3 +1,7 @@
+# OLD
+# DELETING THIS SOON
+# EXTRACT WHAT YOU NEED!
+
 import json
 from django.db import IntegrityError
 from django.http import JsonResponse
