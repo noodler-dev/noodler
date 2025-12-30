@@ -2,6 +2,7 @@ from django.utils import timezone
 from rest_framework.decorators import api_view, authentication_classes
 from rest_framework.response import Response
 from projects.auth import APIKeyAuthentication
+from traces.api.validators import validate_trace
 from traces.models import RawTrace
 
 
@@ -14,6 +15,8 @@ def hello_world(request):
 @authentication_classes([APIKeyAuthentication])
 def ingest_trace(request):
     try:
+        validate_trace(request.data)
+
         _ = RawTrace.objects.create(
             project=request.auth.project,
             received_at=timezone.now(),
@@ -22,4 +25,4 @@ def ingest_trace(request):
     except Exception as e:
         return Response({"error": str(e)}, status=400)
 
-    return Response({"message": "trace ingested"})
+    return Response({})
