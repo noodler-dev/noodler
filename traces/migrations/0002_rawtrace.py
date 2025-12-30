@@ -5,20 +5,33 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('projects', '0004_alter_apikey_hashed_key'),
-        ('traces', '0001_initial'),
+        ("projects", "0004_alter_apikey_hashed_key"),
+        ("traces", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='RawTrace',
+            name="RawTrace",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('received_at', models.DateTimeField()),
-                ('payload', models.JSONField()),
-                ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='projects.project')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("received_at", models.DateTimeField()),
+                ("payload", models.JSONField()),
+                (
+                    "project",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="projects.project",
+                    ),
+                ),
             ],
         ),
     ]

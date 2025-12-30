@@ -4,12 +4,13 @@ from rest_framework.response import Response
 from projects.auth import APIKeyAuthentication
 from traces.models import RawTrace
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 def hello_world(request):
     return Response({"message": "hello world"})
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @authentication_classes([APIKeyAuthentication])
 def ingest_trace(request):
     try:

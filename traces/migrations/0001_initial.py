@@ -5,36 +5,65 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('projects', '0004_alter_apikey_hashed_key'),
+        ("projects", "0004_alter_apikey_hashed_key"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Trace',
+            name="Trace",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('trace_id', models.CharField(max_length=32)),
-                ('started_at', models.DateTimeField()),
-                ('ended_at', models.DateTimeField()),
-                ('metadata', models.JSONField()),
-                ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='projects.project')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("trace_id", models.CharField(max_length=32)),
+                ("started_at", models.DateTimeField()),
+                ("ended_at", models.DateTimeField()),
+                ("metadata", models.JSONField()),
+                (
+                    "project",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="projects.project",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Span',
+            name="Span",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('span_id', models.CharField(max_length=16)),
-                ('parent_span_id', models.CharField(blank=True, max_length=16, null=True)),
-                ('name', models.CharField(max_length=255)),
-                ('start_time', models.DateTimeField()),
-                ('end_time', models.DateTimeField(blank=True, null=True)),
-                ('attributes', models.JSONField()),
-                ('trace', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='traces.trace')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("span_id", models.CharField(max_length=16)),
+                (
+                    "parent_span_id",
+                    models.CharField(blank=True, max_length=16, null=True),
+                ),
+                ("name", models.CharField(max_length=255)),
+                ("start_time", models.DateTimeField()),
+                ("end_time", models.DateTimeField(blank=True, null=True)),
+                ("attributes", models.JSONField()),
+                (
+                    "trace",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="traces.trace"
+                    ),
+                ),
             ],
         ),
     ]

@@ -4,15 +4,14 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('ingest', '0003_rawtrace_and_more'),
-        ('projects', '0004_alter_apikey_hashed_key'),
+        ("ingest", "0003_rawtrace_and_more"),
+        ("projects", "0004_alter_apikey_hashed_key"),
     ]
 
     operations = [
         migrations.RenameModel(
-            old_name='RawTrace',
-            new_name='RawTraceOLD',
+            old_name="RawTrace",
+            new_name="RawTraceOLD",
         ),
     ]

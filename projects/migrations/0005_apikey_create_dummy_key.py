@@ -4,15 +4,17 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('projects', '0004_alter_apikey_hashed_key'),
+        ("projects", "0004_alter_apikey_hashed_key"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='apikey',
-            name='create_dummy_key',
-            field=models.BooleanField(default=False, help_text='Create a dummy key for testing purposes. Key is `dummy-key`.'),
+            model_name="apikey",
+            name="create_dummy_key",
+            field=models.BooleanField(
+                default=False,
+                help_text="Create a dummy key for testing purposes. Key is `dummy-key`.",
+            ),
         ),
     ]

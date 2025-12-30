@@ -5,39 +5,48 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('ingest', '0002_rawspan_projected'),
-        ('projects', '0004_alter_apikey_hashed_key'),
+        ("ingest", "0002_rawspan_projected"),
+        ("projects", "0004_alter_apikey_hashed_key"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='RawTrace',
+            name="RawTrace",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('received_at', models.DateTimeField()),
-                ('payload', models.JSONField()),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("received_at", models.DateTimeField()),
+                ("payload", models.JSONField()),
             ],
         ),
         migrations.RemoveIndex(
-            model_name='rawspan',
-            name='ingest_raws_trace_i_c50025_idx',
+            model_name="rawspan",
+            name="ingest_raws_trace_i_c50025_idx",
         ),
         migrations.RemoveIndex(
-            model_name='rawspan',
-            name='ingest_raws_ingeste_65eb53_idx',
+            model_name="rawspan",
+            name="ingest_raws_ingeste_65eb53_idx",
         ),
         migrations.RemoveConstraint(
-            model_name='rawspan',
-            name='unique_raw_span',
+            model_name="rawspan",
+            name="unique_raw_span",
         ),
         migrations.DeleteModel(
-            name='RawSpan',
+            name="RawSpan",
         ),
         migrations.AddField(
-            model_name='rawtrace',
-            name='project',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='projects.project'),
+            model_name="rawtrace",
+            name="project",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="projects.project"
+            ),
         ),
     ]

@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('projects', '0003_alter_apikey_hashed_key'),
+        ("projects", "0003_alter_apikey_hashed_key"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='apikey',
-            name='hashed_key',
+            model_name="apikey",
+            name="hashed_key",
             field=models.CharField(blank=True, max_length=255, null=True, unique=True),
         ),
     ]
