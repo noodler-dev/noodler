@@ -4,6 +4,7 @@ from rest_framework.response import Response
 
 from projects.auth import APIKeyAuthentication
 from traces.models import RawTrace
+from traces.tasks import process_trace
 
 
 @api_view(["POST"])
@@ -15,11 +16,12 @@ def ingest_trace(request):
         else:
             return Response({"error": "Unsupported content type"}, status=400)
 
-        _ = RawTrace.objects.create(
+        raw_trace = RawTrace.objects.create(
             project=request.auth.project,
             received_at=timezone.now(),
             payload_protobuf=body_bytes,
         )
+        process_trace.delay(raw_trace.id)
     except Exception as e:
         return Response({"error": str(e)}, status=400)
 
