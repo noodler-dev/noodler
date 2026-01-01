@@ -4,10 +4,17 @@ from projects.models import Project
 
 
 class RawTrace(models.Model):
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("processed", "Processed"),
+        ("error", "Error"),
+    ]
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="pending")
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     payload_json = JSONField(blank=True, null=True)
     payload_protobuf = BinaryField(blank=True, null=True)
     received_at = models.DateTimeField()
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="pending")
 
     def __str__(self):
         return f"RawTrace for {self.project.name}"
