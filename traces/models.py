@@ -4,8 +4,8 @@ from projects.models import Project
 
 
 class RawTrace(models.Model):
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)    
-    payload_json = JSONField()
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    payload_json = JSONField(blank=True, null=True)
     payload_protobuf = BinaryField(blank=True, null=True)
     received_at = models.DateTimeField()
 

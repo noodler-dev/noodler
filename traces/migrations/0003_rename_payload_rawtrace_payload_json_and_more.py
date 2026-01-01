@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('traces', '0002_rawtrace'),
+        ("traces", "0002_rawtrace"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='rawtrace',
-            old_name='payload',
-            new_name='payload_json',
+            model_name="rawtrace",
+            old_name="payload",
+            new_name="payload_json",
         ),
         migrations.AddField(
-            model_name='rawtrace',
-            name='payload_protobuf',
+            model_name="rawtrace",
+            name="payload_protobuf",
             field=models.BinaryField(blank=True, null=True),
         ),
     ]
