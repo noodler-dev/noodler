@@ -59,15 +59,15 @@ def extract_gen_ai_fields(span_attributes: dict) -> dict:
         "gen_ai.input.messages": "input_messages",
         "gen_ai.output.messages": "output_messages",
     }
-    
+
     result = {}
-    
+
     for proto_key, model_key in field_mapping.items():
         if proto_key not in span_attributes:
             continue
-            
+
         value = span_attributes[proto_key]
-        
+
         # Handle JSON string parsing for messages
         if model_key in ("input_messages", "output_messages"):
             if isinstance(value, str):
@@ -90,7 +90,7 @@ def extract_gen_ai_fields(span_attributes: dict) -> dict:
                     value = float(value)
                 except (ValueError, TypeError):
                     value = None
-        
+
         result[model_key] = value
-    
+
     return result
