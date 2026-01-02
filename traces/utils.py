@@ -98,6 +98,58 @@ def extract_gen_ai_fields(span_attributes: dict) -> dict:
     return result
 
 
+def _process_span(span: dict) -> dict:
+    """
+    Process a single span from protobuf dict structure.
+
+    Returns a dict with span data ready for Span model creation.
+    """
+    # Decode span_id from base64
+    span_id_b64 = span.get("span_id")
+    span_id = None
+    if span_id_b64:
+        try:
+            span_id_bytes = base64.b64decode(span_id_b64)
+            span_id = span_id_bytes.hex()
+        except Exception:
+            span_id = span_id_b64
+
+    # Extract basic span fields
+    name = span.get("name", "")
+
+    # Convert timestamps
+    start_time = None
+    end_time = None
+    start_nano = span.get("start_time_unix_nano")
+    end_nano = span.get("end_time_unix_nano")
+
+    if start_nano:
+        try:
+            start_time = convert_nano_to_datetime(int(start_nano))
+        except (ValueError, TypeError):
+            pass
+
+    if end_nano:
+        try:
+            end_time = convert_nano_to_datetime(int(end_nano))
+        except (ValueError, TypeError):
+            pass
+
+    # Parse attributes and extract gen_ai fields
+    span_attributes = span.get("attributes", [])
+    parsed_attrs = parse_attributes(span_attributes)
+    gen_ai_fields = extract_gen_ai_fields(parsed_attrs)
+
+    # Build span data dict
+    return {
+        "span_id": span_id,
+        "name": name,
+        "start_time": start_time,
+        "end_time": end_time,
+        **gen_ai_fields,  # Merge gen_ai fields
+    }
+
+
 def extract_trace_data(traces_dict: dict) -> dict | None:
     """
     Extract trace_id and span data from protobuf dict structure.
@@ -141,51 +193,8 @@ def extract_trace_data(traces_dict: dict) -> dict | None:
                             # If decoding fails, try using as-is or skip
                             trace_id = trace_id_b64
 
-                # Decode span_id from base64
-                span_id_b64 = span.get("span_id")
-                span_id = None
-                if span_id_b64:
-                    try:
-                        span_id_bytes = base64.b64decode(span_id_b64)
-                        span_id = span_id_bytes.hex()
-                    except Exception:
-                        span_id = span_id_b64
-
-                # Extract basic span fields
-                name = span.get("name", "")
-
-                # Convert timestamps
-                start_time = None
-                end_time = None
-                start_nano = span.get("start_time_unix_nano")
-                end_nano = span.get("end_time_unix_nano")
-
-                if start_nano:
-                    try:
-                        start_time = convert_nano_to_datetime(int(start_nano))
-                    except (ValueError, TypeError):
-                        pass
-
-                if end_nano:
-                    try:
-                        end_time = convert_nano_to_datetime(int(end_nano))
-                    except (ValueError, TypeError):
-                        pass
-
-                # Parse attributes and extract gen_ai fields
-                span_attributes = span.get("attributes", [])
-                parsed_attrs = parse_attributes(span_attributes)
-                gen_ai_fields = extract_gen_ai_fields(parsed_attrs)
-
-                # Build span data dict
-                span_data = {
-                    "span_id": span_id,
-                    "name": name,
-                    "start_time": start_time,
-                    "end_time": end_time,
-                    **gen_ai_fields,  # Merge gen_ai fields
-                }
-
+                # Process span into span_data dict
+                span_data = _process_span(span)
                 all_spans.append(span_data)
 
     if trace_id is None:
