@@ -142,7 +142,81 @@ class RawTrace(models.Model):
         }
 
     def _create_trace_and_spans(self, extracted_data):
-        pass
+        """
+        Create Trace and Span objects from extracted data.
+
+        Returns the created/updated Trace object.
+        """
+        if not extracted_data:
+            return None
+
+        trace_id = extracted_data["trace_id"]
+        resource_metadata = extracted_data.get("resource_metadata", {})
+        spans_data = extracted_data.get("spans", [])
+
+        if not spans_data:
+            return None
+
+        # Calculate trace timestamps from spans
+        start_times = [s["start_time"] for s in spans_data if s.get("start_time")]
+        end_times = [s["end_time"] for s in spans_data if s.get("end_time")]
+
+        started_at = min(start_times) if start_times else None
+        ended_at = max(end_times) if end_times else None
+
+        # If no valid timestamps, use received_at as fallback
+        if not started_at:
+            started_at = self.received_at
+        if not ended_at:
+            ended_at = self.received_at
+
+        # Create or get Trace
+        trace, created = Trace.objects.get_or_create(
+            trace_id=trace_id,
+            project=self.project,
+            defaults={
+                "started_at": started_at,
+                "ended_at": ended_at,
+                "metadata": resource_metadata,
+            },
+        )
+
+        # Update trace if it already existed (in case timestamps changed)
+        if not created:
+            trace.started_at = started_at
+            trace.ended_at = ended_at
+            trace.metadata = resource_metadata
+            trace.save()
+
+        # Prepare Span objects for bulk_create
+        span_objects = []
+        for span_data in spans_data:
+            span = Span(
+                trace=trace,
+                span_id=span_data.get("span_id", ""),
+                name=span_data.get("name", ""),
+                start_time=span_data.get("start_time") or started_at,
+                end_time=span_data.get("end_time"),
+                provider_name=span_data.get("provider_name"),
+                operation_name=span_data.get("operation_name"),
+                request_model=span_data.get("request_model"),
+                max_tokens=span_data.get("max_tokens"),
+                top_p=span_data.get("top_p"),
+                response_id=span_data.get("response_id"),
+                response_model=span_data.get("response_model"),
+                output_tokens=span_data.get("output_tokens"),
+                input_tokens=span_data.get("input_tokens"),
+                finished_reasons=span_data.get("finished_reasons"),
+                input_messages=span_data.get("input_messages"),
+                output_messages=span_data.get("output_messages"),
+            )
+            span_objects.append(span)
+
+        # Bulk create spans
+        if span_objects:
+            Span.objects.bulk_create(span_objects, ignore_conflicts=True)
+
+        return trace
 
 
 class Trace(models.Model):
