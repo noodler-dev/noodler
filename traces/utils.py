@@ -26,3 +26,18 @@ def extract_attribute_value(attr: dict) -> any:
     else:
         # Fallback: return None or the value_dict itself
         return None
+
+
+def parse_attributes(attributes: list) -> dict:
+    result = {}
+
+    if not attributes:
+        return result
+
+    for attr in attributes:
+        key = attr.get("key")
+        value = extract_attribute_value(attr)
+        if key:
+            result[key] = value
+
+    return result
