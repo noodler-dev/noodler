@@ -42,24 +42,24 @@ class RawTrace(models.Model):
     def process(self):
         """
         Main processing method: converts protobuf to Trace and Span objects.
-        
+
         Returns the created/updated Trace object, or None on error.
         """
         try:
             # Step 1: Convert protobuf to dict
             traces_dict = self.convert_to_dict()
-            
+
             # Step 2: Extract trace data
             extracted_data = self._extract_trace_data(traces_dict)
-            
+
             if not extracted_data:
                 self.status = "error"
                 self.save(update_fields=["status"])
                 return None
-            
+
             # Step 3: Create Trace and Spans
             trace = self._create_trace_and_spans(extracted_data)
-            
+
             if trace:
                 # Step 4: Update status to processed
                 self.status = "processed"
@@ -69,7 +69,7 @@ class RawTrace(models.Model):
                 self.status = "error"
                 self.save(update_fields=["status"])
                 return None
-                
+
         except Exception:
             # On any error, mark as error and re-raise
             self.status = "error"
@@ -241,6 +241,7 @@ class RawTrace(models.Model):
                 output_tokens=span_data.get("output_tokens"),
                 input_tokens=span_data.get("input_tokens"),
                 finished_reasons=span_data.get("finished_reasons"),
+                system_instructions=span_data.get("system_instructions"),
                 input_messages=span_data.get("input_messages"),
                 output_messages=span_data.get("output_messages"),
             )
@@ -280,6 +281,11 @@ class Span(models.Model):
     output_tokens = models.IntegerField(null=True, blank=True)
     input_tokens = models.IntegerField(null=True, blank=True)
     finished_reasons = models.JSONField(null=True, blank=True)
+    system_instructions = models.JSONField(
+        null=True,
+        blank=True,
+        help_text="This is different from the system prompt, some providers allow instructions to be sent separately from the chat history.",
+    )
     input_messages = models.JSONField(null=True, blank=True)
     output_messages = models.JSONField(null=True, blank=True)
 

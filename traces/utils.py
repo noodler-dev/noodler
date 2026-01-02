@@ -56,6 +56,7 @@ def extract_gen_ai_fields(span_attributes: dict) -> dict:
         "gen_ai.response.finish_reasons": "finished_reasons",
         "gen_ai.usage.input_tokens": "input_tokens",
         "gen_ai.usage.output_tokens": "output_tokens",
+        "gen_ai.system_instructions": "system_instructions",
         "gen_ai.input.messages": "input_messages",
         "gen_ai.output.messages": "output_messages",
     }
