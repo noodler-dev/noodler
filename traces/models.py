@@ -82,7 +82,7 @@ class RawTrace(models.Model):
 
         Returns dict with:
         - trace_id: hex string (32 chars)
-        - resource_metadata: parsed resource attributes
+        - resource_attributes: parsed resource attributes
         - spans: list of span data dicts ready for Span model creation
         """
         resource_spans = traces_dict.get("resource_spans", [])
@@ -91,7 +91,7 @@ class RawTrace(models.Model):
             return None
 
         all_spans = []
-        resource_metadata = {}
+        resource_attributes = {}
         trace_id = None
 
         # Navigate through resource_spans -> scope_spans -> spans
@@ -100,7 +100,7 @@ class RawTrace(models.Model):
             resource = resource_span.get("resource", {})
             resource_attrs = resource.get("attributes", [])
             if resource_attrs:
-                resource_metadata = parse_attributes(resource_attrs)
+                resource_attributes = parse_attributes(resource_attrs)
 
             # Get scope_spans
             scope_spans = resource_span.get("scope_spans", [])
@@ -171,7 +171,7 @@ class RawTrace(models.Model):
 
         return {
             "trace_id": trace_id,
-            "resource_metadata": resource_metadata,
+            "resource_attributes": resource_attributes,
             "spans": all_spans,
         }
 
@@ -185,7 +185,7 @@ class RawTrace(models.Model):
             return None
 
         trace_id = extracted_data["trace_id"]
-        resource_metadata = extracted_data.get("resource_metadata", {})
+        resource_attributes = extracted_data.get("resource_attributes", {})
         spans_data = extracted_data.get("spans", [])
 
         if not spans_data:
@@ -211,7 +211,7 @@ class RawTrace(models.Model):
             defaults={
                 "started_at": started_at,
                 "ended_at": ended_at,
-                "metadata": resource_metadata,
+                "attributes": resource_attributes,
             },
         )
 
@@ -219,7 +219,7 @@ class RawTrace(models.Model):
         if not created:
             trace.started_at = started_at
             trace.ended_at = ended_at
-            trace.metadata = resource_metadata
+            trace.attributes = resource_attributes
             trace.save()
 
         # Prepare Span objects for bulk_create
@@ -258,7 +258,7 @@ class Trace(models.Model):
     trace_id = models.CharField(max_length=32)
     started_at = models.DateTimeField()
     ended_at = models.DateTimeField()
-    metadata = JSONField()
+    attributes = JSONField()
 
     def __str__(self):
         return self.trace_id
