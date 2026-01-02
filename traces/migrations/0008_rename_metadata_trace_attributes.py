@@ -4,15 +4,14 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('traces', '0007_alter_span_name_alter_span_operation_name_and_more'),
+        ("traces", "0007_alter_span_name_alter_span_operation_name_and_more"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='trace',
-            old_name='metadata',
-            new_name='attributes',
+            model_name="trace",
+            old_name="metadata",
+            new_name="attributes",
         ),
     ]

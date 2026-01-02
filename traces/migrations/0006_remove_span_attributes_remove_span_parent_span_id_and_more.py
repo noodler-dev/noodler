@@ -4,78 +4,77 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('traces', '0005_rawtrace_status'),
+        ("traces", "0005_rawtrace_status"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='span',
-            name='attributes',
+            model_name="span",
+            name="attributes",
         ),
         migrations.RemoveField(
-            model_name='span',
-            name='parent_span_id',
+            model_name="span",
+            name="parent_span_id",
         ),
         migrations.AddField(
-            model_name='span',
-            name='finished_reasons',
+            model_name="span",
+            name="finished_reasons",
             field=models.JSONField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='span',
-            name='input_messages',
+            model_name="span",
+            name="input_messages",
             field=models.JSONField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='span',
-            name='input_tokens',
+            model_name="span",
+            name="input_tokens",
             field=models.IntegerField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='span',
-            name='max_tokens',
+            model_name="span",
+            name="max_tokens",
             field=models.IntegerField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='span',
-            name='operation_name',
+            model_name="span",
+            name="operation_name",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AddField(
-            model_name='span',
-            name='output_messages',
+            model_name="span",
+            name="output_messages",
             field=models.JSONField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='span',
-            name='output_tokens',
+            model_name="span",
+            name="output_tokens",
             field=models.IntegerField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='span',
-            name='provider_name',
+            model_name="span",
+            name="provider_name",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AddField(
-            model_name='span',
-            name='request_model',
+            model_name="span",
+            name="request_model",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AddField(
-            model_name='span',
-            name='response_id',
+            model_name="span",
+            name="response_id",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AddField(
-            model_name='span',
-            name='response_model',
+            model_name="span",
+            name="response_model",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AddField(
-            model_name='span',
-            name='top_p',
+            model_name="span",
+            name="top_p",
             field=models.FloatField(blank=True, null=True),
         ),
     ]

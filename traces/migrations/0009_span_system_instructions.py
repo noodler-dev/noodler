@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('traces', '0008_rename_metadata_trace_attributes'),
+        ("traces", "0008_rename_metadata_trace_attributes"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='span',
-            name='system_instructions',
+            model_name="span",
+            name="system_instructions",
             field=models.JSONField(blank=True, null=True),
         ),
     ]

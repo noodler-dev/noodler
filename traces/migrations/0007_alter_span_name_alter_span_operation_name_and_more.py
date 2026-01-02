@@ -4,40 +4,39 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('traces', '0006_remove_span_attributes_remove_span_parent_span_id_and_more'),
+        ("traces", "0006_remove_span_attributes_remove_span_parent_span_id_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='span',
-            name='name',
+            model_name="span",
+            name="name",
             field=models.CharField(max_length=50),
         ),
         migrations.AlterField(
-            model_name='span',
-            name='operation_name',
+            model_name="span",
+            name="operation_name",
             field=models.CharField(blank=True, max_length=50, null=True),
         ),
         migrations.AlterField(
-            model_name='span',
-            name='provider_name',
+            model_name="span",
+            name="provider_name",
             field=models.CharField(blank=True, max_length=50, null=True),
         ),
         migrations.AlterField(
-            model_name='span',
-            name='request_model',
+            model_name="span",
+            name="request_model",
             field=models.CharField(blank=True, max_length=100, null=True),
         ),
         migrations.AlterField(
-            model_name='span',
-            name='response_id',
+            model_name="span",
+            name="response_id",
             field=models.CharField(blank=True, max_length=100, null=True),
         ),
         migrations.AlterField(
-            model_name='span',
-            name='response_model',
+            model_name="span",
+            name="response_model",
             field=models.CharField(blank=True, max_length=100, null=True),
         ),
     ]
