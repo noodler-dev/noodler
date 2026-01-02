@@ -1,5 +1,5 @@
 import base64
-from django.db import models
+from django.db import models, transaction
 from django.db.models import JSONField, BinaryField
 from google.protobuf.json_format import MessageToDict
 from opentelemetry.proto.trace.v1.trace_pb2 import TracesData
@@ -38,9 +38,43 @@ class RawTrace(models.Model):
 
         return traces_dict
 
+    @transaction.atomic
     def process(self):
-        traces_dict = self.convert_to_dict()
-        return traces_dict
+        """
+        Main processing method: converts protobuf to Trace and Span objects.
+        
+        Returns the created/updated Trace object, or None on error.
+        """
+        try:
+            # Step 1: Convert protobuf to dict
+            traces_dict = self.convert_to_dict()
+            
+            # Step 2: Extract trace data
+            extracted_data = self._extract_trace_data(traces_dict)
+            
+            if not extracted_data:
+                self.status = "error"
+                self.save(update_fields=["status"])
+                return None
+            
+            # Step 3: Create Trace and Spans
+            trace = self._create_trace_and_spans(extracted_data)
+            
+            if trace:
+                # Step 4: Update status to processed
+                self.status = "processed"
+                self.save(update_fields=["status"])
+                return trace
+            else:
+                self.status = "error"
+                self.save(update_fields=["status"])
+                return None
+                
+        except Exception:
+            # On any error, mark as error and re-raise
+            self.status = "error"
+            self.save(update_fields=["status"])
+            raise
 
     def _extract_trace_data(self, traces_dict):
         """
