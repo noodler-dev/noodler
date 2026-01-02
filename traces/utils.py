@@ -28,13 +28,13 @@ def extract_attribute_value(attr: dict) -> any:
         return None
 
 
-def parse_attributes(attributes: list) -> dict:
+def parse_attributes(trace_attributes: list) -> dict:
     result = {}
 
-    if not attributes:
+    if not trace_attributes:
         return result
 
-    for attr in attributes:
+    for attr in trace_attributes:
         key = attr.get("key")
         value = extract_attribute_value(attr)
         if key:
