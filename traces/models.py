@@ -1,5 +1,8 @@
 from django.db import models
 from django.db.models import JSONField, BinaryField
+from google.protobuf.json_format import MessageToDict
+from opentelemetry.proto.trace.v1.trace_pb2 import TracesData
+
 from projects.models import Project
 
 
@@ -18,6 +21,26 @@ class RawTrace(models.Model):
 
     def __str__(self):
         return f"RawTrace for {self.project.name}"
+
+    def convert_to_dict(self):
+        # Parse the protobuf message
+        traces_data = TracesData()
+        traces_data.ParseFromString(self.payload_protobuf)
+
+        # Convert protobuf message to dictionary (unmarshalling)
+        traces_dict = MessageToDict(traces_data, preserving_proto_field_name=True)
+
+        return traces_dict
+
+    def process(self):
+        traces_dict = self.convert_to_dict()
+        return traces_dict
+
+    def _extract_trace_data(self, traces_dict):
+        pass
+
+    def _create_trace_and_spans(self, extracted_data):
+        pass
 
 
 class Trace(models.Model):
