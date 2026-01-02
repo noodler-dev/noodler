@@ -32,13 +32,23 @@ class Trace(models.Model):
 
 
 class Span(models.Model):
+    name = models.CharField(max_length=255)
     trace = models.ForeignKey(Trace, on_delete=models.CASCADE)
     span_id = models.CharField(max_length=16)
-    parent_span_id = models.CharField(max_length=16, null=True, blank=True)
-    name = models.CharField(max_length=255)
     start_time = models.DateTimeField()
     end_time = models.DateTimeField(null=True, blank=True)
-    attributes = JSONField()
+    provider_name = models.CharField(max_length=255, null=True, blank=True)
+    operation_name = models.CharField(max_length=255, null=True, blank=True)
+    request_model = models.CharField(max_length=255, null=True, blank=True)
+    max_tokens = models.IntegerField(null=True, blank=True)
+    top_p = models.FloatField(null=True, blank=True)
+    response_id = models.CharField(max_length=255, null=True, blank=True)
+    response_model = models.CharField(max_length=255, null=True, blank=True)
+    output_tokens = models.IntegerField(null=True, blank=True)
+    input_tokens = models.IntegerField(null=True, blank=True)
+    finished_reasons = models.JSONField(null=True, blank=True)
+    input_messages = models.JSONField(null=True, blank=True)
+    output_messages = models.JSONField(null=True, blank=True)
 
     def __str__(self):
         return self.name
