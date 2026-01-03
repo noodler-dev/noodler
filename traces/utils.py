@@ -8,7 +8,7 @@ def convert_nano_to_datetime(nano_timestamp: int) -> datetime:
     return datetime.fromtimestamp(nano_timestamp / 1e9, timezone.UTC)
 
 
-def extract_attribute_value(attr: dict) -> any:
+def extract_attribute_value(attr: dict):
     value_dict = attr.get("value", {})
 
     if "string_value" in value_dict:
@@ -98,6 +98,15 @@ def extract_gen_ai_fields(span_attributes: dict) -> dict:
     return result
 
 
+def _decode_base64_id(id_b64: str | None) -> str | None:
+    if not id_b64:
+        return None
+    try:
+        return base64.b64decode(id_b64).hex()
+    except Exception:
+        return None
+
+
 def _process_span(span: dict) -> dict:
     """
     Process a single span from protobuf dict structure.
@@ -105,14 +114,7 @@ def _process_span(span: dict) -> dict:
     Returns a dict with span data ready for Span model creation.
     """
     # Decode span_id from base64
-    span_id_b64 = span.get("span_id")
-    span_id = None
-    if span_id_b64:
-        try:
-            span_id_bytes = base64.b64decode(span_id_b64)
-            span_id = span_id_bytes.hex()
-        except Exception:
-            span_id = span_id_b64
+    span_id = _decode_base64_id(span.get("span_id"))
 
     # Extract basic span fields
     name = span.get("name", "")
@@ -184,14 +186,7 @@ def extract_trace_data(traces_dict: dict) -> dict | None:
             for span in spans:
                 # Extract trace_id from first span (all spans share same trace_id)
                 if trace_id is None:
-                    trace_id_b64 = span.get("trace_id")
-                    if trace_id_b64:
-                        try:
-                            trace_id_bytes = base64.b64decode(trace_id_b64)
-                            trace_id = trace_id_bytes.hex()
-                        except Exception:
-                            # If decoding fails, try using as-is or skip
-                            trace_id = trace_id_b64
+                    trace_id = _decode_base64_id(span.get("trace_id"))
 
                 # Process span into span_data dict
                 span_data = _process_span(span)
