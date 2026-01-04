@@ -62,6 +62,15 @@ def extract_gen_ai_fields(span_attributes: dict) -> dict:
         "gen_ai.output.messages": "output_messages",
     }
 
+    json_fields = [
+        "input_messages",
+        "output_messages",
+        "system_instructions",
+        "finished_reasons",
+    ]
+    int_fields = ["max_tokens", "input_tokens", "output_tokens"]
+    float_fields = ["top_p"]
+
     result = {}
 
     for proto_key, model_key in field_mapping.items():
@@ -71,7 +80,7 @@ def extract_gen_ai_fields(span_attributes: dict) -> dict:
         value = span_attributes[proto_key]
 
         # Handle JSON string parsing for messages
-        if model_key in ("input_messages", "output_messages"):
+        if model_key in json_fields:
             if isinstance(value, str):
                 try:
                     value = json.loads(value)
@@ -79,14 +88,14 @@ def extract_gen_ai_fields(span_attributes: dict) -> dict:
                     # If parsing fails, keep as None or original value
                     value = None
         # Ensure int fields are integers
-        elif model_key in ("max_tokens", "input_tokens", "output_tokens"):
+        elif model_key in int_fields:
             if value is not None:
                 try:
                     value = int(value)
                 except (ValueError, TypeError):
                     value = None
         # Ensure float fields are floats
-        elif model_key == "top_p":
+        elif model_key in float_fields:
             if value is not None:
                 try:
                     value = float(value)
