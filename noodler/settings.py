@@ -131,3 +131,9 @@ REST_FRAMEWORK = {
         "projects.auth.APIKeyAuthentication",
     ],
 }
+
+
+# Celery Configuration
+# https://docs.celeryq.dev/en/stable/index.html
+
+CELERY_BROKER_URL = "pyamqp://guest@localhost//"

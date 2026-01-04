@@ -1,28 +1,29 @@
 from django.utils import timezone
-from rest_framework.decorators import api_view, authentication_classes
 from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from projects.auth import APIKeyAuthentication
-from traces.api.validators import validate_trace
 from traces.models import RawTrace
+from traces.tasks import process_trace
 
 
-@api_view(["GET"])
-def hello_world(request):
-    return Response({"message": "hello world"})
+class TraceListView(APIView):
+    authentication_classes = [APIKeyAuthentication]
 
+    def post(self, request):
+        try:
+            if request.content_type == "application/x-protobuf":
+                body_bytes = request.body
+            else:
+                return Response({"error": "Unsupported content type"}, status=400)
 
-@api_view(["POST"])
-@authentication_classes([APIKeyAuthentication])
-def ingest_trace(request):
-    try:
-        validate_trace(request.data)
+            raw_trace = RawTrace.objects.create(
+                project=request.auth.project,
+                received_at=timezone.now(),
+                payload_protobuf=body_bytes,
+            )
+            process_trace.delay(raw_trace.id)
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 
-        _ = RawTrace.objects.create(
-            project=request.auth.project,
-            received_at=timezone.now(),
-            payload=request.data,
-        )
-    except Exception as e:
-        return Response({"error": str(e)}, status=400)
-
-    return Response({})
+        return Response({}, status=201)
