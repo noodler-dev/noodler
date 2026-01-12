@@ -281,18 +281,17 @@ class LogoutViewTests(TestCase):
 
     def test_logout_requires_authentication(self):
         """Test that logout requires authentication (redirects to login)"""
-        response = self.client.get(self.logout_url)
+        response = self.client.post(self.logout_url)
         
         # Should redirect to login page (since @login_required redirects unauthenticated users)
         self.assertRedirects(
             response, f"{self.login_url}?next={self.logout_url}", status_code=302
         )
 
-    def test_logout_get_request_works(self):
-        """Test that GET request to logout works (Django allows both GET and POST)"""
+    def test_logout_get_request_not_allowed(self):
+        """Test that GET request to logout returns 405 Method Not Allowed"""
         self.client.force_login(self.user)
         
-        response = self.client.get(self.logout_url, follow=True)
+        response = self.client.get(self.logout_url)
         
-        self.assertFalse(response.context["user"].is_authenticated)
-        self.assertRedirects(response, self.login_url)
+        self.assertEqual(response.status_code, 405)  # Method Not Allowed

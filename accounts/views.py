@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.conf import settings
 from django.db import transaction
+from django.views.decorators.http import require_POST
 from .models import UserProfile
 
 
@@ -52,6 +53,7 @@ def login_view(request):
 
 
 @login_required
+@require_POST
 def logout_view(request):
     logout(request)
     messages.success(request, "You have been logged out successfully.")
