@@ -57,4 +57,4 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     messages.success(request, "You have been logged out successfully.")
-    return redirect("accounts:login")
+    return redirect(settings.LOGOUT_REDIRECT_URL)
