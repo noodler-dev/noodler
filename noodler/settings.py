@@ -140,5 +140,6 @@ CELERY_BROKER_URL = "pyamqp://guest@localhost//"
 
 
 # Authentication URLs
+
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/accounts/login/"
