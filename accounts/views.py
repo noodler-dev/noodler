@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.conf import settings
 from django.db import transaction
 from django.views.decorators.http import require_POST
+from django.utils.http import url_has_allowed_host_and_scheme
 from .models import UserProfile
 
 
@@ -43,8 +44,13 @@ def login_view(request):
             user = authenticate(username=username, password=password)
             if user is not None:
                 login(request, user)
-                # Redirect to 'next' URL if provided, otherwise use LOGIN_REDIRECT_URL
-                redirect_url = next_url or settings.LOGIN_REDIRECT_URL
+                # Validate and redirect to 'next' URL if provided and safe, otherwise use LOGIN_REDIRECT_URL
+                if next_url and url_has_allowed_host_and_scheme(
+                    next_url, allowed_hosts=None
+                ):
+                    redirect_url = next_url
+                else:
+                    redirect_url = settings.LOGIN_REDIRECT_URL
                 return redirect(redirect_url)
     else:
         form = AuthenticationForm()
