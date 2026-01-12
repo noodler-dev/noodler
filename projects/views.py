@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_http_methods, require_POST
+from django.utils.http import url_has_allowed_host_and_scheme
 from accounts.models import Organization
 from .models import Project, ApiKey
 
@@ -257,4 +258,11 @@ def project_switch(request, project_id):
 
     request.session["current_project_id"] = project.id
     messages.success(request, f'Switched to project "{project.name}".')
+
+    # Support redirect to a different page via 'next' parameter
+    # Validate the URL to prevent open redirect vulnerabilities
+    next_url = request.POST.get("next")
+    if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts=None):
+        return redirect(next_url)
+
     return redirect("projects:detail", project_id=project.id)

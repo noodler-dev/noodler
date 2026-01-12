@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}Trace {{ trace.trace_id }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1>Trace Details</h1>
+            <p class="text-muted mb-0">
+                <code>{{ trace.trace_id }}</code> • {{ trace.project.name }}
+                {% if current_project and current_project.id != trace.project.id %}
+                    <span class="badge bg-warning ms-2">Different from current project</span>
+                {% endif %}
+            </p>
+        </div>
+        <a href="{% url 'traces:list' %}" class="btn btn-outline-secondary">Back to Traces</a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Trace Information</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Trace ID:</dt>
+                        <dd class="col-sm-8"><code>{{ trace.trace_id }}</code></dd>
+                        
+                        <dt class="col-sm-4">Project:</dt>
+                        <dd class="col-sm-8">{{ trace.project.name }}</dd>
+                        
+                        <dt class="col-sm-4">Started:</dt>
+                        <dd class="col-sm-8">{{ trace.started_at|date:"M d, Y H:i:s" }}</dd>
+                        
+                        <dt class="col-sm-4">Ended:</dt>
+                        <dd class="col-sm-8">{{ trace.ended_at|date:"M d, Y H:i:s" }}</dd>
+                        
+                        <dt class="col-sm-4">Duration:</dt>
+                        <dd class="col-sm-8">
+                            {% if trace_duration %}
+                                {{ trace_duration }}
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Summary</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-6">Total Spans:</dt>
+                        <dd class="col-sm-6">{{ spans_with_duration|length }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Spans</h5>
+        </div>
+        <div class="card-body">
+            {% if spans_with_duration %}
+                <div class="accordion" id="spansAccordion">
+                    {% for item in spans_with_duration %}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading{{ item.span.id }}">
+                                <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ item.span.id }}" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" aria-controls="collapse{{ item.span.id }}">
+                                    <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                                        <div>
+                                            <strong>{{ item.span.name }}</strong>
+                                            {% if item.span.operation_name %}
+                                                <span class="badge bg-secondary ms-2">{{ item.span.operation_name }}</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="text-muted small">
+                                            <span class="me-3">
+                                                <code>{{ item.span.span_id }}</code>
+                                            </span>
+                                            {% if item.duration %}
+                                                <span>{{ item.duration }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </button>
+                            </h2>
+                            <div id="collapse{{ item.span.id }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" aria-labelledby="heading{{ item.span.id }}" data-bs-parent="#spansAccordion">
+                                <div class="accordion-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6>Timing</h6>
+                                            <dl class="row mb-3">
+                                                <dt class="col-sm-5">Start Time:</dt>
+                                                <dd class="col-sm-7">{{ item.span.start_time|date:"M d, Y H:i:s.u" }}</dd>
+                                                
+                                                {% if item.span.end_time %}
+                                                    <dt class="col-sm-5">End Time:</dt>
+                                                    <dd class="col-sm-7">{{ item.span.end_time|date:"M d, Y H:i:s.u" }}</dd>
+                                                    
+                                                    <dt class="col-sm-5">Duration:</dt>
+                                                    <dd class="col-sm-7">
+                                                        {% if item.duration %}
+                                                            {{ item.duration }}
+                                                        {% else %}
+                                                            <span class="text-muted">N/A</span>
+                                                        {% endif %}
+                                                    </dd>
+                                                {% else %}
+                                                    <dt class="col-sm-5">Status:</dt>
+                                                    <dd class="col-sm-7"><span class="badge bg-warning">In Progress</span></dd>
+                                                {% endif %}
+                                            </dl>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6>Provider Information</h6>
+                                            <dl class="row mb-3">
+                                                {% if item.span.provider_name %}
+                                                    <dt class="col-sm-5">Provider:</dt>
+                                                    <dd class="col-sm-7">{{ item.span.provider_name }}</dd>
+                                                {% endif %}
+                                                
+                                                {% if item.span.request_model %}
+                                                    <dt class="col-sm-5">Request Model:</dt>
+                                                    <dd class="col-sm-7"><code>{{ item.span.request_model }}</code></dd>
+                                                {% endif %}
+                                                
+                                                {% if item.span.response_model %}
+                                                    <dt class="col-sm-5">Response Model:</dt>
+                                                    <dd class="col-sm-7"><code>{{ item.span.response_model }}</code></dd>
+                                                {% endif %}
+                                                
+                                                {% if item.span.response_id %}
+                                                    <dt class="col-sm-5">Response ID:</dt>
+                                                    <dd class="col-sm-7"><code>{{ item.span.response_id }}</code></dd>
+                                                {% endif %}
+                                            </dl>
+                                        </div>
+                                    </div>
+
+                                    {% if item.span.input_tokens or item.span.output_tokens %}
+                                        <div class="row mb-3">
+                                            <div class="col-12">
+                                                <h6>Token Usage</h6>
+                                                <dl class="row mb-0">
+                                                    {% if item.span.input_tokens %}
+                                                        <dt class="col-sm-3">Input Tokens:</dt>
+                                                        <dd class="col-sm-3">{{ item.span.input_tokens|floatformat:0 }}</dd>
+                                                    {% endif %}
+                                                    
+                                                    {% if item.span.output_tokens %}
+                                                        <dt class="col-sm-3">Output Tokens:</dt>
+                                                        <dd class="col-sm-3">{{ item.span.output_tokens|floatformat:0 }}</dd>
+                                                    {% endif %}
+                                                    
+                                                    {% if item.span.input_tokens and item.span.output_tokens %}
+                                                        <dt class="col-sm-3">Total Tokens:</dt>
+                                                        <dd class="col-sm-3">{{ item.span.input_tokens|add:item.span.output_tokens|floatformat:0 }}</dd>
+                                                    {% endif %}
+                                                </dl>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+
+                                    {% if item.span.max_tokens or item.span.top_p %}
+                                        <div class="row mb-3">
+                                            <div class="col-12">
+                                                <h6>Parameters</h6>
+                                                <dl class="row mb-0">
+                                                    {% if item.span.max_tokens %}
+                                                        <dt class="col-sm-3">Max Tokens:</dt>
+                                                        <dd class="col-sm-3">{{ item.span.max_tokens }}</dd>
+                                                    {% endif %}
+                                                    
+                                                    {% if item.span.top_p %}
+                                                        <dt class="col-sm-3">Top P:</dt>
+                                                        <dd class="col-sm-3">{{ item.span.top_p }}</dd>
+                                                    {% endif %}
+                                                </dl>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+
+                                    {% if item.finished_reasons_json %}
+                                        <div class="row mb-3">
+                                            <div class="col-12">
+                                                <h6>Finished Reasons</h6>
+                                                <pre class="bg-light p-2 rounded"><code>{{ item.finished_reasons_json }}</code></pre>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+
+                                    {% if item.system_instructions_json %}
+                                        <div class="row mb-3">
+                                            <div class="col-12">
+                                                <h6>System Instructions</h6>
+                                                <pre class="bg-light p-2 rounded"><code>{{ item.system_instructions_json }}</code></pre>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+
+                                    {% if item.input_messages_json %}
+                                        <div class="row mb-3">
+                                            <div class="col-12">
+                                                <h6>Input Messages</h6>
+                                                <pre class="bg-light p-2 rounded" style="max-height: 300px; overflow-y: auto;"><code>{{ item.input_messages_json }}</code></pre>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+
+                                    {% if item.output_messages_json %}
+                                        <div class="row mb-3">
+                                            <div class="col-12">
+                                                <h6>Output Messages</h6>
+                                                <pre class="bg-light p-2 rounded" style="max-height: 300px; overflow-y: auto;"><code>{{ item.output_messages_json }}</code></pre>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">No spans found for this trace.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
