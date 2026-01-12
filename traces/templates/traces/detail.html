@@ -45,8 +45,8 @@
                         
                         <dt class="col-sm-4">Duration:</dt>
                         <dd class="col-sm-8">
-                            {% if trace.ended_at and trace.started_at %}
-                                {{ trace.ended_at|timesince:trace.started_at }}
+                            {% if trace_duration %}
+                                {{ trace_duration }}
                             {% else %}
                                 <span class="text-muted">N/A</span>
                             {% endif %}
@@ -63,7 +63,7 @@
                 <div class="card-body">
                     <dl class="row mb-0">
                         <dt class="col-sm-6">Total Spans:</dt>
-                        <dd class="col-sm-6">{{ spans|length }}</dd>
+                        <dd class="col-sm-6">{{ spans_with_duration|length }}</dd>
                     </dl>
                 </div>
             </div>
@@ -75,45 +75,51 @@
             <h5 class="mb-0">Spans</h5>
         </div>
         <div class="card-body">
-            {% if spans %}
+            {% if spans_with_duration %}
                 <div class="accordion" id="spansAccordion">
-                    {% for span in spans %}
+                    {% for item in spans_with_duration %}
                         <div class="accordion-item">
-                            <h2 class="accordion-header" id="heading{{ span.id }}">
-                                <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ span.id }}" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" aria-controls="collapse{{ span.id }}">
+                            <h2 class="accordion-header" id="heading{{ item.span.id }}">
+                                <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ item.span.id }}" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" aria-controls="collapse{{ item.span.id }}">
                                     <div class="d-flex justify-content-between align-items-center w-100 me-3">
                                         <div>
-                                            <strong>{{ span.name }}</strong>
-                                            {% if span.operation_name %}
-                                                <span class="badge bg-secondary ms-2">{{ span.operation_name }}</span>
+                                            <strong>{{ item.span.name }}</strong>
+                                            {% if item.span.operation_name %}
+                                                <span class="badge bg-secondary ms-2">{{ item.span.operation_name }}</span>
                                             {% endif %}
                                         </div>
                                         <div class="text-muted small">
                                             <span class="me-3">
-                                                <code>{{ span.span_id }}</code>
+                                                <code>{{ item.span.span_id }}</code>
                                             </span>
-                                            {% if span.end_time and span.start_time %}
-                                                <span>{{ span.end_time|timesince:span.start_time }}</span>
+                                            {% if item.duration %}
+                                                <span>{{ item.duration }}</span>
                                             {% endif %}
                                         </div>
                                     </div>
                                 </button>
                             </h2>
-                            <div id="collapse{{ span.id }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" aria-labelledby="heading{{ span.id }}" data-bs-parent="#spansAccordion">
+                            <div id="collapse{{ item.span.id }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" aria-labelledby="heading{{ item.span.id }}" data-bs-parent="#spansAccordion">
                                 <div class="accordion-body">
                                     <div class="row">
                                         <div class="col-md-6">
                                             <h6>Timing</h6>
                                             <dl class="row mb-3">
                                                 <dt class="col-sm-5">Start Time:</dt>
-                                                <dd class="col-sm-7">{{ span.start_time|date:"M d, Y H:i:s.u" }}</dd>
+                                                <dd class="col-sm-7">{{ item.span.start_time|date:"M d, Y H:i:s.u" }}</dd>
                                                 
-                                                {% if span.end_time %}
+                                                {% if item.span.end_time %}
                                                     <dt class="col-sm-5">End Time:</dt>
-                                                    <dd class="col-sm-7">{{ span.end_time|date:"M d, Y H:i:s.u" }}</dd>
+                                                    <dd class="col-sm-7">{{ item.span.end_time|date:"M d, Y H:i:s.u" }}</dd>
                                                     
                                                     <dt class="col-sm-5">Duration:</dt>
-                                                    <dd class="col-sm-7">{{ span.end_time|timesince:span.start_time }}</dd>
+                                                    <dd class="col-sm-7">
+                                                        {% if item.duration %}
+                                                            {{ item.duration }}
+                                                        {% else %}
+                                                            <span class="text-muted">N/A</span>
+                                                        {% endif %}
+                                                    </dd>
                                                 {% else %}
                                                     <dt class="col-sm-5">Status:</dt>
                                                     <dd class="col-sm-7"><span class="badge bg-warning">In Progress</span></dd>
@@ -123,104 +129,104 @@
                                         <div class="col-md-6">
                                             <h6>Provider Information</h6>
                                             <dl class="row mb-3">
-                                                {% if span.provider_name %}
+                                                {% if item.span.provider_name %}
                                                     <dt class="col-sm-5">Provider:</dt>
-                                                    <dd class="col-sm-7">{{ span.provider_name }}</dd>
+                                                    <dd class="col-sm-7">{{ item.span.provider_name }}</dd>
                                                 {% endif %}
                                                 
-                                                {% if span.request_model %}
+                                                {% if item.span.request_model %}
                                                     <dt class="col-sm-5">Request Model:</dt>
-                                                    <dd class="col-sm-7"><code>{{ span.request_model }}</code></dd>
+                                                    <dd class="col-sm-7"><code>{{ item.span.request_model }}</code></dd>
                                                 {% endif %}
                                                 
-                                                {% if span.response_model %}
+                                                {% if item.span.response_model %}
                                                     <dt class="col-sm-5">Response Model:</dt>
-                                                    <dd class="col-sm-7"><code>{{ span.response_model }}</code></dd>
+                                                    <dd class="col-sm-7"><code>{{ item.span.response_model }}</code></dd>
                                                 {% endif %}
                                                 
-                                                {% if span.response_id %}
+                                                {% if item.span.response_id %}
                                                     <dt class="col-sm-5">Response ID:</dt>
-                                                    <dd class="col-sm-7"><code>{{ span.response_id }}</code></dd>
+                                                    <dd class="col-sm-7"><code>{{ item.span.response_id }}</code></dd>
                                                 {% endif %}
                                             </dl>
                                         </div>
                                     </div>
 
-                                    {% if span.input_tokens or span.output_tokens %}
+                                    {% if item.span.input_tokens or item.span.output_tokens %}
                                         <div class="row mb-3">
                                             <div class="col-12">
                                                 <h6>Token Usage</h6>
                                                 <dl class="row mb-0">
-                                                    {% if span.input_tokens %}
+                                                    {% if item.span.input_tokens %}
                                                         <dt class="col-sm-3">Input Tokens:</dt>
-                                                        <dd class="col-sm-3">{{ span.input_tokens|floatformat:0 }}</dd>
+                                                        <dd class="col-sm-3">{{ item.span.input_tokens|floatformat:0 }}</dd>
                                                     {% endif %}
                                                     
-                                                    {% if span.output_tokens %}
+                                                    {% if item.span.output_tokens %}
                                                         <dt class="col-sm-3">Output Tokens:</dt>
-                                                        <dd class="col-sm-3">{{ span.output_tokens|floatformat:0 }}</dd>
+                                                        <dd class="col-sm-3">{{ item.span.output_tokens|floatformat:0 }}</dd>
                                                     {% endif %}
                                                     
-                                                    {% if span.input_tokens and span.output_tokens %}
+                                                    {% if item.span.input_tokens and item.span.output_tokens %}
                                                         <dt class="col-sm-3">Total Tokens:</dt>
-                                                        <dd class="col-sm-3">{{ span.input_tokens|add:span.output_tokens|floatformat:0 }}</dd>
+                                                        <dd class="col-sm-3">{{ item.span.input_tokens|add:item.span.output_tokens|floatformat:0 }}</dd>
                                                     {% endif %}
                                                 </dl>
                                             </div>
                                         </div>
                                     {% endif %}
 
-                                    {% if span.max_tokens or span.top_p %}
+                                    {% if item.span.max_tokens or item.span.top_p %}
                                         <div class="row mb-3">
                                             <div class="col-12">
                                                 <h6>Parameters</h6>
                                                 <dl class="row mb-0">
-                                                    {% if span.max_tokens %}
+                                                    {% if item.span.max_tokens %}
                                                         <dt class="col-sm-3">Max Tokens:</dt>
-                                                        <dd class="col-sm-3">{{ span.max_tokens }}</dd>
+                                                        <dd class="col-sm-3">{{ item.span.max_tokens }}</dd>
                                                     {% endif %}
                                                     
-                                                    {% if span.top_p %}
+                                                    {% if item.span.top_p %}
                                                         <dt class="col-sm-3">Top P:</dt>
-                                                        <dd class="col-sm-3">{{ span.top_p }}</dd>
+                                                        <dd class="col-sm-3">{{ item.span.top_p }}</dd>
                                                     {% endif %}
                                                 </dl>
                                             </div>
                                         </div>
                                     {% endif %}
 
-                                    {% if span.finished_reasons %}
+                                    {% if item.span.finished_reasons %}
                                         <div class="row mb-3">
                                             <div class="col-12">
                                                 <h6>Finished Reasons</h6>
-                                                <pre class="bg-light p-2 rounded"><code>{{ span.finished_reasons|safe }}</code></pre>
+                                                <pre class="bg-light p-2 rounded"><code>{{ item.span.finished_reasons|safe }}</code></pre>
                                             </div>
                                         </div>
                                     {% endif %}
 
-                                    {% if span.system_instructions %}
+                                    {% if item.span.system_instructions %}
                                         <div class="row mb-3">
                                             <div class="col-12">
                                                 <h6>System Instructions</h6>
-                                                <pre class="bg-light p-2 rounded"><code>{{ span.system_instructions|safe }}</code></pre>
+                                                <pre class="bg-light p-2 rounded"><code>{{ item.span.system_instructions|safe }}</code></pre>
                                             </div>
                                         </div>
                                     {% endif %}
 
-                                    {% if span.input_messages %}
+                                    {% if item.span.input_messages %}
                                         <div class="row mb-3">
                                             <div class="col-12">
                                                 <h6>Input Messages</h6>
-                                                <pre class="bg-light p-2 rounded" style="max-height: 300px; overflow-y: auto;"><code>{{ span.input_messages|safe }}</code></pre>
+                                                <pre class="bg-light p-2 rounded" style="max-height: 300px; overflow-y: auto;"><code>{{ item.span.input_messages|safe }}</code></pre>
                                             </div>
                                         </div>
                                     {% endif %}
 
-                                    {% if span.output_messages %}
+                                    {% if item.span.output_messages %}
                                         <div class="row mb-3">
                                             <div class="col-12">
                                                 <h6>Output Messages</h6>
-                                                <pre class="bg-light p-2 rounded" style="max-height: 300px; overflow-y: auto;"><code>{{ span.output_messages|safe }}</code></pre>
+                                                <pre class="bg-light p-2 rounded" style="max-height: 300px; overflow-y: auto;"><code>{{ item.span.output_messages|safe }}</code></pre>
                                             </div>
                                         </div>
                                     {% endif %}
