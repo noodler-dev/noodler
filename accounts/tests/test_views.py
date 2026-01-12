@@ -216,6 +216,32 @@ class LoginViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, "/")
 
+    def test_login_redirects_to_next_parameter(self):
+        """Test that login redirects to 'next' parameter if provided"""
+        next_url = "/some/protected/page/"
+        data = {
+            "username": self.username,
+            "password": self.password,
+            "next": next_url,
+        }
+        response = self.client.post(self.login_url, data)
+        
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, next_url)
+
+    def test_login_uses_next_from_query_string(self):
+        """Test that login uses 'next' from query string"""
+        next_url = "/another/page/"
+        login_url_with_next = f"{self.login_url}?next={next_url}"
+        data = {
+            "username": self.username,
+            "password": self.password,
+        }
+        response = self.client.post(login_url_with_next, data)
+        
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, next_url)
+
 
 class LogoutViewTests(TestCase):
     def setUp(self):
