@@ -26,24 +26,26 @@ def format_duration(start, end):
 
 @login_required
 def trace_list(request):
-    """List traces for the current project (from session) or all user projects."""
+    """List traces for the current project (from session). Requires a project to be selected."""
     user_projects = get_user_projects(request.user)
     current_project_id = request.session.get("current_project_id")
 
-    # Filter by current project if set, otherwise show all user projects
-    if current_project_id:
-        # Validate that the current project is still accessible to the user
-        try:
-            current_project = user_projects.get(id=current_project_id)
-            traces = Trace.objects.filter(project=current_project).order_by("-started_at")
-        except Project.DoesNotExist:
-            # Current project is no longer accessible, clear it from session
-            del request.session["current_project_id"]
-            current_project = None
-            traces = Trace.objects.filter(project__in=user_projects).order_by("-started_at")
-    else:
-        current_project = None
-        traces = Trace.objects.filter(project__in=user_projects).order_by("-started_at")
+    # Require a current project to be set
+    if not current_project_id:
+        messages.info(request, "Please select a project to view traces.")
+        return redirect("projects:list")
+
+    # Validate that the current project is still accessible to the user
+    try:
+        current_project = user_projects.get(id=current_project_id)
+    except Project.DoesNotExist:
+        # Current project is no longer accessible, clear it from session
+        del request.session["current_project_id"]
+        messages.error(request, "The selected project is no longer accessible.")
+        return redirect("projects:list")
+
+    # Filter traces by current project only
+    traces = Trace.objects.filter(project=current_project).order_by("-started_at")
 
     # Calculate durations for each trace
     traces_with_duration = []
@@ -65,14 +67,6 @@ def trace_list(request):
 
 
 @login_required
-def trace_list_clear_filter(request):
-    """Clear the current project filter and show all traces."""
-    if "current_project_id" in request.session:
-        del request.session["current_project_id"]
-    return redirect("traces:list")
-
-
-@login_required
 def trace_detail(request, trace_id):
     """View trace details and all associated spans."""
     trace = get_object_or_404(Trace, id=trace_id)
@@ -81,7 +75,13 @@ def trace_detail(request, trace_id):
     user_projects = get_user_projects(request.user)
     if trace.project not in user_projects:
         messages.error(request, "You do not have access to this trace.")
-        return redirect("traces:list")
+        return redirect("projects:list")
+    
+    # Require a current project to be set
+    current_project_id = request.session.get("current_project_id")
+    if not current_project_id:
+        messages.info(request, "Please select a project to view traces.")
+        return redirect("projects:list")
 
     # Get all spans for this trace, ordered by start_time
     spans = Span.objects.filter(trace=trace).order_by("start_time")

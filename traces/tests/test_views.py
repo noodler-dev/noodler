@@ -74,31 +74,9 @@ class TraceViewsTestCase(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("/accounts/login/", response.url)
 
-    def test_trace_list_shows_user_traces(self):
-        """Test that trace list shows traces from user's projects when no project filter is set."""
-        self.client.login(username="user1", password="testpass123")
-        response = self.client.get(reverse("traces:list"))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "trace1")
-        self.assertNotContains(response, "trace2")
-
-    def test_trace_list_filters_by_current_project(self):
-        """Test that trace list filters by current_project_id from session."""
-        self.client.login(username="user1", password="testpass123")
-        
-        # Set current project in session
-        session = self.client.session
-        session["current_project_id"] = self.project1.id
-        session.save()
-        
-        response = self.client.get(reverse("traces:list"))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "trace1")
-        self.assertNotContains(response, "trace2")
-        self.assertContains(response, self.project1.name)
 
     def test_trace_list_clears_invalid_current_project(self):
-        """Test that invalid current_project_id is cleared from session."""
+        """Test that invalid current_project_id redirects to projects list."""
         self.client.login(username="user1", password="testpass123")
         
         # Set invalid project ID in session
@@ -107,34 +85,15 @@ class TraceViewsTestCase(TestCase):
         session.save()
         
         response = self.client.get(reverse("traces:list"))
-        self.assertEqual(response.status_code, 200)
-        # Should show all user traces since invalid project was cleared
-        self.assertContains(response, "trace1")
-        
-        # Session should be cleared
-        session = self.client.session
-        self.assertNotIn("current_project_id", session)
-
-    def test_trace_list_clear_filter(self):
-        """Test that clear_filter view removes current_project_id from session."""
-        self.client.login(username="user1", password="testpass123")
-        
-        # Set current project in session
-        session = self.client.session
-        session["current_project_id"] = self.project1.id
-        session.save()
-        
-        # Clear filter
-        response = self.client.get(reverse("traces:clear_filter"))
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse("traces:list"))
+        self.assertEqual(response.url, reverse("projects:list"))
         
         # Session should be cleared
         session = self.client.session
         self.assertNotIn("current_project_id", session)
 
     def test_trace_list_empty_for_user_with_no_traces(self):
-        """Test that trace list shows empty message when user has no traces."""
+        """Test that trace list shows empty message when user has no traces for current project."""
         # Create user with no traces
         user3 = User.objects.create_user(username="user3", password="testpass123")
         user3_profile = UserProfile.objects.create(user=user3)
@@ -142,8 +101,15 @@ class TraceViewsTestCase(TestCase):
         Membership.objects.create(
             user_profile=user3_profile, organization=org3, role="admin"
         )
+        project3 = Project.objects.create(name="Project 3", organization=org3)
 
         self.client.login(username="user3", password="testpass123")
+        
+        # Set current project in session
+        session = self.client.session
+        session["current_project_id"] = project3.id
+        session.save()
+        
         response = self.client.get(reverse("traces:list"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "No traces found")
@@ -154,16 +120,35 @@ class TraceViewsTestCase(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("/accounts/login/", response.url)
 
+    def test_trace_detail_requires_current_project(self):
+        """Test that trace detail requires a current project to be set."""
+        self.client.login(username="user1", password="testpass123")
+        response = self.client.get(reverse("traces:detail", args=[self.trace1.id]))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("projects:list"))
+
     def test_trace_detail_access_control(self):
         """Test that users cannot view traces outside their projects."""
         self.client.login(username="user1", password="testpass123")
+        
+        # Set current project in session
+        session = self.client.session
+        session["current_project_id"] = self.project1.id
+        session.save()
+        
         response = self.client.get(reverse("traces:detail", args=[self.trace2.id]))
         self.assertEqual(response.status_code, 302)  # Redirects with error message
-        self.assertEqual(response.url, reverse("traces:list"))
+        self.assertEqual(response.url, reverse("projects:list"))
 
     def test_trace_detail_shows_trace_info(self):
         """Test that trace detail shows trace information."""
         self.client.login(username="user1", password="testpass123")
+        
+        # Set current project in session
+        session = self.client.session
+        session["current_project_id"] = self.project1.id
+        session.save()
+        
         response = self.client.get(reverse("traces:detail", args=[self.trace1.id]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "trace1")
@@ -172,6 +157,12 @@ class TraceViewsTestCase(TestCase):
     def test_trace_detail_shows_spans(self):
         """Test that trace detail shows all associated spans."""
         self.client.login(username="user1", password="testpass123")
+        
+        # Set current project in session
+        session = self.client.session
+        session["current_project_id"] = self.project1.id
+        session.save()
+        
         response = self.client.get(reverse("traces:detail", args=[self.trace1.id]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Span 1")
@@ -190,6 +181,12 @@ class TraceViewsTestCase(TestCase):
         )
 
         self.client.login(username="user1", password="testpass123")
+        
+        # Set current project in session
+        session = self.client.session
+        session["current_project_id"] = self.project1.id
+        session.save()
+        
         response = self.client.get(reverse("traces:detail", args=[self.trace1.id]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Span 1")
