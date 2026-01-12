@@ -1,7 +1,7 @@
+import json
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.shortcuts import render, get_object_or_404, redirect
-from django.utils import timezone
 from projects.views import get_user_projects
 from .models import Trace, Span
 
@@ -63,9 +63,20 @@ def trace_detail(request, trace_id):
     spans_with_duration = []
     for span in spans:
         span_duration = format_duration(span.start_time, span.end_time)
+        
+        # Format JSON fields for display
+        finished_reasons_json = json.dumps(span.finished_reasons, indent=2) if span.finished_reasons else None
+        system_instructions_json = json.dumps(span.system_instructions, indent=2) if span.system_instructions else None
+        input_messages_json = json.dumps(span.input_messages, indent=2) if span.input_messages else None
+        output_messages_json = json.dumps(span.output_messages, indent=2) if span.output_messages else None
+        
         spans_with_duration.append({
             "span": span,
             "duration": span_duration,
+            "finished_reasons_json": finished_reasons_json,
+            "system_instructions_json": system_instructions_json,
+            "input_messages_json": input_messages_json,
+            "output_messages_json": output_messages_json,
         })
 
     context = {
