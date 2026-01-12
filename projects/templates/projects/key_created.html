@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}API Key Created{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="alert alert-warning">
+                <h4 class="alert-heading">Important!</h4>
+                <p class="mb-0">This is the only time you will be able to see this API key. Make sure to copy it now and store it securely.</p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">API Key Created: {{ api_key.name }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Your API Key:</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="apiKey" value="{{ raw_key }}" readonly>
+                            <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard()">Copy</button>
+                        </div>
+                        <small class="form-text text-muted">This key will not be shown again. Store it securely.</small>
+                    </div>
+                    <div class="alert alert-info">
+                        <strong>Usage:</strong> Include this key in the Authorization header as: <code>Authorization: Bearer {{ raw_key }}</code>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'projects:detail' project.id %}" class="btn btn-primary">Back to Project</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyToClipboard() {
+    const apiKeyInput = document.getElementById('apiKey');
+    apiKeyInput.select();
+    apiKeyInput.setSelectionRange(0, 99999); // For mobile devices
+    document.execCommand('copy');
+    
+    // Show feedback
+    const button = event.target;
+    const originalText = button.textContent;
+    button.textContent = 'Copied!';
+    button.classList.add('btn-success');
+    button.classList.remove('btn-outline-secondary');
+    
+    setTimeout(() => {
+        button.textContent = originalText;
+        button.classList.remove('btn-success');
+        button.classList.add('btn-outline-secondary');
+    }, 2000);
+}
+</script>
+{% endblock %}
