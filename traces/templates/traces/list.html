@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Traces{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Traces</h1>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if traces %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Trace ID</th>
+                        <th>Project</th>
+                        <th>Started</th>
+                        <th>Ended</th>
+                        <th>Duration</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for trace in traces %}
+                        <tr>
+                            <td>
+                                <code>{{ trace.trace_id }}</code>
+                            </td>
+                            <td>{{ trace.project.name }}</td>
+                            <td>{{ trace.started_at|date:"M d, Y H:i:s" }}</td>
+                            <td>{{ trace.ended_at|date:"M d, Y H:i:s" }}</td>
+                            <td>
+                                {% if trace.ended_at and trace.started_at %}
+                                    {{ trace.ended_at|timesince:trace.started_at }}
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'traces:detail' trace.id %}" class="btn btn-sm btn-primary">View</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <p class="mb-0">No traces found. Traces will appear here once they are received and processed.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
