@@ -262,9 +262,7 @@ def project_switch(request, project_id):
     # Support redirect to a different page via 'next' parameter
     # Validate the URL to prevent open redirect vulnerabilities
     next_url = request.POST.get("next")
-    if next_url and url_has_allowed_host_and_scheme(
-        next_url, allowed_hosts=None
-    ):
+    if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts=None):
         return redirect(next_url)
 
     return redirect("projects:detail", project_id=project.id)
