@@ -1,3 +1,2 @@
-from django.test import TestCase
-
-# Create your tests here.
+# Import all tests from the tests package
+from .tests.test_views import *  # noqa
