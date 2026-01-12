@@ -5,7 +5,47 @@
 {% block content %}
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Traces</h1>
+        <div>
+            <h1>Traces</h1>
+            {% if current_project %}
+                <p class="text-muted mb-0">
+                    Showing traces for <strong>{{ current_project.name }}</strong>
+                    <a href="{% url 'traces:clear_filter' %}" class="ms-2">Show All Projects</a>
+                </p>
+            {% else %}
+                <p class="text-muted mb-0">Showing traces from all projects</p>
+            {% endif %}
+        </div>
+        <div>
+            {% if user_projects %}
+                <div class="dropdown">
+                    <button class="btn btn-outline-primary dropdown-toggle" type="button" id="projectDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        {% if current_project %}
+                            {{ current_project.name }}
+                        {% else %}
+                            Select Project
+                        {% endif %}
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="projectDropdown">
+                        {% if current_project %}
+                            <li><a class="dropdown-item" href="{% url 'traces:clear_filter' %}">Show All Projects</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                        {% endif %}
+                        {% for project in user_projects %}
+                            {% if project.id != current_project.id|default:0 %}
+                                <li>
+                                    <form method="post" action="{% url 'projects:switch' project.id %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{% url 'traces:list' %}">
+                                        <button type="submit" class="dropdown-item">{{ project.name }}</button>
+                                    </form>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
     </div>
 
     {% if messages %}
@@ -23,7 +63,9 @@
                 <thead>
                     <tr>
                         <th>Trace ID</th>
-                        <th>Project</th>
+                        {% if not current_project %}
+                            <th>Project</th>
+                        {% endif %}
                         <th>Started</th>
                         <th>Ended</th>
                         <th>Duration</th>
@@ -36,7 +78,9 @@
                             <td>
                                 <code>{{ item.trace.trace_id }}</code>
                             </td>
-                            <td>{{ item.trace.project.name }}</td>
+                            {% if not current_project %}
+                                <td>{{ item.trace.project.name }}</td>
+                            {% endif %}
                             <td>{{ item.trace.started_at|date:"M d, Y H:i:s" }}</td>
                             <td>{{ item.trace.ended_at|date:"M d, Y H:i:s" }}</td>
                             <td>

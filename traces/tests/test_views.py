@@ -75,12 +75,63 @@ class TraceViewsTestCase(TestCase):
         self.assertIn("/accounts/login/", response.url)
 
     def test_trace_list_shows_user_traces(self):
-        """Test that trace list only shows traces from user's projects."""
+        """Test that trace list shows traces from user's projects when no project filter is set."""
         self.client.login(username="user1", password="testpass123")
         response = self.client.get(reverse("traces:list"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "trace1")
         self.assertNotContains(response, "trace2")
+
+    def test_trace_list_filters_by_current_project(self):
+        """Test that trace list filters by current_project_id from session."""
+        self.client.login(username="user1", password="testpass123")
+        
+        # Set current project in session
+        session = self.client.session
+        session["current_project_id"] = self.project1.id
+        session.save()
+        
+        response = self.client.get(reverse("traces:list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "trace1")
+        self.assertNotContains(response, "trace2")
+        self.assertContains(response, self.project1.name)
+
+    def test_trace_list_clears_invalid_current_project(self):
+        """Test that invalid current_project_id is cleared from session."""
+        self.client.login(username="user1", password="testpass123")
+        
+        # Set invalid project ID in session
+        session = self.client.session
+        session["current_project_id"] = 99999
+        session.save()
+        
+        response = self.client.get(reverse("traces:list"))
+        self.assertEqual(response.status_code, 200)
+        # Should show all user traces since invalid project was cleared
+        self.assertContains(response, "trace1")
+        
+        # Session should be cleared
+        session = self.client.session
+        self.assertNotIn("current_project_id", session)
+
+    def test_trace_list_clear_filter(self):
+        """Test that clear_filter view removes current_project_id from session."""
+        self.client.login(username="user1", password="testpass123")
+        
+        # Set current project in session
+        session = self.client.session
+        session["current_project_id"] = self.project1.id
+        session.save()
+        
+        # Clear filter
+        response = self.client.get(reverse("traces:clear_filter"))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("traces:list"))
+        
+        # Session should be cleared
+        session = self.client.session
+        self.assertNotIn("current_project_id", session)
 
     def test_trace_list_empty_for_user_with_no_traces(self):
         """Test that trace list shows empty message when user has no traces."""

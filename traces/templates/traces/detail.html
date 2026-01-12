@@ -9,6 +9,9 @@
             <h1>Trace Details</h1>
             <p class="text-muted mb-0">
                 <code>{{ trace.trace_id }}</code> • {{ trace.project.name }}
+                {% if current_project and current_project.id != trace.project.id %}
+                    <span class="badge bg-warning ms-2">Different from current project</span>
+                {% endif %}
             </p>
         </div>
         <a href="{% url 'traces:list' %}" class="btn btn-outline-secondary">Back to Traces</a>

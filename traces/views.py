@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.shortcuts import render, get_object_or_404, redirect
 from projects.views import get_user_projects
+from projects.models import Project
 from .models import Trace, Span
 
 
@@ -25,9 +26,24 @@ def format_duration(start, end):
 
 @login_required
 def trace_list(request):
-    """List all traces the user has access to (via their projects)."""
+    """List traces for the current project (from session) or all user projects."""
     user_projects = get_user_projects(request.user)
-    traces = Trace.objects.filter(project__in=user_projects).order_by("-started_at")
+    current_project_id = request.session.get("current_project_id")
+
+    # Filter by current project if set, otherwise show all user projects
+    if current_project_id:
+        # Validate that the current project is still accessible to the user
+        try:
+            current_project = user_projects.get(id=current_project_id)
+            traces = Trace.objects.filter(project=current_project).order_by("-started_at")
+        except Project.DoesNotExist:
+            # Current project is no longer accessible, clear it from session
+            del request.session["current_project_id"]
+            current_project = None
+            traces = Trace.objects.filter(project__in=user_projects).order_by("-started_at")
+    else:
+        current_project = None
+        traces = Trace.objects.filter(project__in=user_projects).order_by("-started_at")
 
     # Calculate durations for each trace
     traces_with_duration = []
@@ -42,8 +58,18 @@ def trace_list(request):
 
     context = {
         "traces_with_duration": traces_with_duration,
+        "current_project": current_project,
+        "user_projects": user_projects,
     }
     return render(request, "traces/list.html", context)
+
+
+@login_required
+def trace_list_clear_filter(request):
+    """Clear the current project filter and show all traces."""
+    if "current_project_id" in request.session:
+        del request.session["current_project_id"]
+    return redirect("traces:list")
 
 
 @login_required
@@ -95,9 +121,20 @@ def trace_detail(request, trace_id):
             }
         )
 
+    # Get current project from session for context
+    current_project_id = request.session.get("current_project_id")
+    current_project = None
+    if current_project_id:
+        user_projects = get_user_projects(request.user)
+        try:
+            current_project = user_projects.get(id=current_project_id)
+        except Project.DoesNotExist:
+            pass
+
     context = {
         "trace": trace,
         "trace_duration": trace_duration,
         "spans_with_duration": spans_with_duration,
+        "current_project": current_project,
     }
     return render(request, "traces/detail.html", context)

@@ -257,4 +257,10 @@ def project_switch(request, project_id):
 
     request.session["current_project_id"] = project.id
     messages.success(request, f'Switched to project "{project.name}".')
+    
+    # Support redirect to a different page via 'next' parameter
+    next_url = request.POST.get("next")
+    if next_url:
+        return redirect(next_url)
+    
     return redirect("projects:detail", project_id=project.id)
