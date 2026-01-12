@@ -76,7 +76,7 @@ def trace_detail(request, trace_id):
     if trace.project not in user_projects:
         messages.error(request, "You do not have access to this trace.")
         return redirect("projects:list")
-    
+
     # Require a current project to be set
     current_project_id = request.session.get("current_project_id")
     if not current_project_id:

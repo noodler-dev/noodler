@@ -74,20 +74,19 @@ class TraceViewsTestCase(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("/accounts/login/", response.url)
 
-
     def test_trace_list_clears_invalid_current_project(self):
         """Test that invalid current_project_id redirects to projects list."""
         self.client.login(username="user1", password="testpass123")
-        
+
         # Set invalid project ID in session
         session = self.client.session
         session["current_project_id"] = 99999
         session.save()
-        
+
         response = self.client.get(reverse("traces:list"))
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("projects:list"))
-        
+
         # Session should be cleared
         session = self.client.session
         self.assertNotIn("current_project_id", session)
@@ -104,12 +103,12 @@ class TraceViewsTestCase(TestCase):
         project3 = Project.objects.create(name="Project 3", organization=org3)
 
         self.client.login(username="user3", password="testpass123")
-        
+
         # Set current project in session
         session = self.client.session
         session["current_project_id"] = project3.id
         session.save()
-        
+
         response = self.client.get(reverse("traces:list"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "No traces found")
@@ -130,12 +129,12 @@ class TraceViewsTestCase(TestCase):
     def test_trace_detail_access_control(self):
         """Test that users cannot view traces outside their projects."""
         self.client.login(username="user1", password="testpass123")
-        
+
         # Set current project in session
         session = self.client.session
         session["current_project_id"] = self.project1.id
         session.save()
-        
+
         response = self.client.get(reverse("traces:detail", args=[self.trace2.id]))
         self.assertEqual(response.status_code, 302)  # Redirects with error message
         self.assertEqual(response.url, reverse("projects:list"))
@@ -143,12 +142,12 @@ class TraceViewsTestCase(TestCase):
     def test_trace_detail_shows_trace_info(self):
         """Test that trace detail shows trace information."""
         self.client.login(username="user1", password="testpass123")
-        
+
         # Set current project in session
         session = self.client.session
         session["current_project_id"] = self.project1.id
         session.save()
-        
+
         response = self.client.get(reverse("traces:detail", args=[self.trace1.id]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "trace1")
@@ -157,12 +156,12 @@ class TraceViewsTestCase(TestCase):
     def test_trace_detail_shows_spans(self):
         """Test that trace detail shows all associated spans."""
         self.client.login(username="user1", password="testpass123")
-        
+
         # Set current project in session
         session = self.client.session
         session["current_project_id"] = self.project1.id
         session.save()
-        
+
         response = self.client.get(reverse("traces:detail", args=[self.trace1.id]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Span 1")
@@ -181,12 +180,12 @@ class TraceViewsTestCase(TestCase):
         )
 
         self.client.login(username="user1", password="testpass123")
-        
+
         # Set current project in session
         session = self.client.session
         session["current_project_id"] = self.project1.id
         session.save()
-        
+
         response = self.client.get(reverse("traces:detail", args=[self.trace1.id]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Span 1")
