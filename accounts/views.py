@@ -13,7 +13,7 @@ from .models import UserProfile
 def signup_view(request):
     if request.user.is_authenticated:
         return redirect("/")
-    
+
     if request.method == "POST":
         form = UserCreationForm(request.POST)
         if form.is_valid():
@@ -25,17 +25,17 @@ def signup_view(request):
             return redirect("accounts:login")
     else:
         form = UserCreationForm()
-    
+
     return render(request, "accounts/signup.html", {"form": form})
 
 
 def login_view(request):
     if request.user.is_authenticated:
         return redirect("/")
-    
+
     # Get the 'next' parameter from query string or POST data
     next_url = request.GET.get("next") or request.POST.get("next")
-    
+
     if request.method == "POST":
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
@@ -54,7 +54,7 @@ def login_view(request):
                 return redirect(redirect_url)
     else:
         form = AuthenticationForm()
-    
+
     return render(request, "accounts/login.html", {"form": form, "next": next_url})
 
 
