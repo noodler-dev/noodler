@@ -52,10 +52,14 @@ def project_create(request):
             messages.error(request, "Project name is required.")
             return render(request, "projects/new.html", {"organizations": user_orgs})
 
+        if not organization_id:
+            messages.error(request, "Organization is required.")
+            return render(request, "projects/new.html", {"organizations": user_orgs})
+
         # Validate organization access
         try:
             org = user_orgs.get(id=organization_id)
-        except Organization.DoesNotExist:
+        except (Organization.DoesNotExist, ValueError):
             messages.error(request, "Invalid organization selected.")
             return render(request, "projects/new.html", {"organizations": user_orgs})
 
