@@ -4,6 +4,7 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.conf import settings
+from django.db import transaction
 from .models import UserProfile
 
 
@@ -14,9 +15,10 @@ def signup_view(request):
     if request.method == "POST":
         form = UserCreationForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            # Create UserProfile for the new user
-            UserProfile.objects.create(user=user)
+            with transaction.atomic():
+                user = form.save()
+                # Create UserProfile for the new user
+                UserProfile.objects.create(user=user)
             messages.success(request, "Account created successfully! Please log in.")
             return redirect("accounts:login")
     else:
