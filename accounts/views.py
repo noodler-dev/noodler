@@ -1,26 +1,51 @@
-from django.contrib.auth.views import LoginView, LogoutView
-from django.contrib.auth.forms import UserCreationForm
-from django.urls import reverse_lazy
-from django.views.generic import CreateView
+from django.shortcuts import render, redirect
+from django.contrib.auth import login, authenticate
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from .models import UserProfile
 
 
-class SignUpView(CreateView):
-    form_class = UserCreationForm
-    template_name = "accounts/signup.html"
-    success_url = reverse_lazy("accounts:login")
+def signup_view(request):
+    if request.user.is_authenticated:
+        return redirect("/")
+    
+    if request.method == "POST":
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            # Create UserProfile for the new user
+            UserProfile.objects.create(user=user)
+            messages.success(request, "Account created successfully! Please log in.")
+            return redirect("accounts:login")
+    else:
+        form = UserCreationForm()
+    
+    return render(request, "accounts/signup.html", {"form": form})
 
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        # Create UserProfile for the new user
-        UserProfile.objects.create(user=self.object)
-        return response
+
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect("/")
+    
+    if request.method == "POST":
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get("username")
+            password = form.cleaned_data.get("password")
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                login(request, user)
+                return redirect("/")
+    else:
+        form = AuthenticationForm()
+    
+    return render(request, "accounts/login.html", {"form": form})
 
 
-class CustomLoginView(LoginView):
-    template_name = "accounts/login.html"
-    redirect_authenticated_user = True
-
-
-class CustomLogoutView(LogoutView):
-    next_page = reverse_lazy("accounts:login")
+@login_required
+def logout_view(request):
+    from django.contrib.auth import logout
+    logout(request)
+    messages.success(request, "You have been logged out successfully.")
+    return redirect("accounts:login")
