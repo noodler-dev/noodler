@@ -20,7 +20,7 @@
                         <label class="form-label">Your API Key:</label>
                         <div class="input-group">
                             <input type="text" class="form-control" id="apiKey" value="{{ raw_key }}" readonly>
-                            <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard()">Copy</button>
+                            <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard(this)">Copy</button>
                         </div>
                         <small class="form-text text-muted">This key will not be shown again. Store it securely.</small>
                     </div>
@@ -37,14 +37,37 @@
 </div>
 
 <script>
-function copyToClipboard() {
+function copyToClipboard(button) {
     const apiKeyInput = document.getElementById('apiKey');
-    apiKeyInput.select();
-    apiKeyInput.setSelectionRange(0, 99999); // For mobile devices
-    document.execCommand('copy');
+    const apiKey = apiKeyInput.value;
     
-    // Show feedback
-    const button = event.target;
+    // Use modern Clipboard API if available, fallback to execCommand
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(apiKey).then(() => {
+            showButtonFeedback(button);
+        }).catch(() => {
+            // Fallback to execCommand if clipboard API fails
+            fallbackCopy(apiKeyInput, button);
+        });
+    } else {
+        // Fallback for older browsers
+        fallbackCopy(apiKeyInput, button);
+    }
+}
+
+function fallbackCopy(input, button) {
+    input.select();
+    input.setSelectionRange(0, 99999); // For mobile devices
+    try {
+        document.execCommand('copy');
+        showButtonFeedback(button);
+    } catch (err) {
+        // If copy fails, still show feedback
+        showButtonFeedback(button);
+    }
+}
+
+function showButtonFeedback(button) {
     const originalText = button.textContent;
     button.textContent = 'Copied!';
     button.classList.add('btn-success');
