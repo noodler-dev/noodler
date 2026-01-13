@@ -24,7 +24,8 @@ services:
     command: sh -c "uv run python manage.py migrate && uv run python manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/app
-      - db_data:/app
+      - db_data:/app/data
+      - venv_data:/app/.venv
     ports:
       - "8000:8000"
     environment:
@@ -42,7 +43,8 @@ services:
     command: uv run celery -A noodler worker --loglevel=info
     volumes:
       - .:/app
-      - db_data:/app
+      - db_data:/app/data
+      - venv_data:/app/.venv
     environment:
       - CELERY_BROKER_URL=pyamqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672//
       - DJANGO_SETTINGS_MODULE=noodler.settings
@@ -54,3 +56,4 @@ services:
 volumes:
   rabbitmq_data:
   db_data:
+  venv_data:

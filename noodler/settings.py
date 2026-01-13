@@ -84,10 +84,23 @@ WSGI_APPLICATION = "noodler.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+# Use /app/data/db.sqlite3 in Docker (when db_data volume is mounted),
+# otherwise use BASE_DIR / "db.sqlite3" for local development
+_db_path = os.environ.get("DATABASE_PATH")
+if _db_path:
+    _db_name = Path(_db_path)
+else:
+    # Check if /app/data exists (Docker volume mount)
+    _docker_data_path = Path("/app/data/db.sqlite3")
+    if _docker_data_path.parent.exists():
+        _db_name = _docker_data_path
+    else:
+        _db_name = BASE_DIR / "db.sqlite3"
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "NAME": _db_name,
     }
 }
 
