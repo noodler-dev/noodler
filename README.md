@@ -2,7 +2,7 @@
 
 [Noodler](http://noodler.dev/) is a feature rich platform for evaluating AI/LLM applications. 
 
-## Docker Deployment
+## Self-Hosting
 
 To run the entire application using Docker:
 
