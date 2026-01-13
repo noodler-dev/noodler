@@ -29,7 +29,9 @@ DEBUG = True
 # Allow all hosts by default for Docker deployment
 # Can be overridden via ALLOWED_HOSTS environment variable (comma-separated)
 _allowed_hosts = os.environ.get("ALLOWED_HOSTS", "*")
-ALLOWED_HOSTS = ["*"] if _allowed_hosts == "*" else [h.strip() for h in _allowed_hosts.split(",")]
+ALLOWED_HOSTS = (
+    ["*"] if _allowed_hosts == "*" else [h.strip() for h in _allowed_hosts.split(",")]
+)
 
 
 # Application definition
