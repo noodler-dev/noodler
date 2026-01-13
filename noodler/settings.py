@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -25,7 +26,12 @@ SECRET_KEY = "django-insecure-h@7la@45r&wt@emzm24)_s=6jdy!3qkw2bi&*6j)r1r&7^2cfh
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# Allow all hosts by default for Docker deployment
+# Can be overridden via ALLOWED_HOSTS environment variable (comma-separated)
+_allowed_hosts = os.environ.get("ALLOWED_HOSTS", "*")
+ALLOWED_HOSTS = (
+    ["*"] if _allowed_hosts == "*" else [h.strip() for h in _allowed_hosts.split(",")]
+)
 
 
 # Application definition
@@ -78,10 +84,23 @@ WSGI_APPLICATION = "noodler.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+# Use /app/data/db.sqlite3 in Docker (when db_data volume is mounted),
+# otherwise use BASE_DIR / "db.sqlite3" for local development
+_db_path = os.environ.get("DATABASE_PATH")
+if _db_path:
+    _db_name = Path(_db_path)
+else:
+    # Check if /app/data exists (Docker volume mount)
+    _docker_data_path = Path("/app/data/db.sqlite3")
+    if _docker_data_path.parent.exists():
+        _db_name = _docker_data_path
+    else:
+        _db_name = BASE_DIR / "db.sqlite3"
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "NAME": _db_name,
     }
 }
 
@@ -121,6 +140,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 
 # Django REST framework
@@ -136,7 +156,7 @@ REST_FRAMEWORK = {
 # Celery Configuration
 # https://docs.celeryq.dev/en/stable/index.html
 
-CELERY_BROKER_URL = "pyamqp://guest@localhost//"
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "pyamqp://guest@localhost//")
 
 
 # Authentication URLs
