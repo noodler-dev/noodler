@@ -6,8 +6,10 @@ services:
       - "5672:5672"   # AMQP port
       - "15672:15672" # Management UI
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+      # Allow guest access from any host (needed for Docker networking)
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit loopback_users []"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
@@ -26,8 +28,9 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - CELERY_BROKER_URL=pyamqp://guest:guest@rabbitmq:5672//
+      - CELERY_BROKER_URL=pyamqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672//
       - DJANGO_SETTINGS_MODULE=noodler.settings
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-*}
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -41,7 +44,7 @@ services:
       - .:/app
       - db_data:/app
     environment:
-      - CELERY_BROKER_URL=pyamqp://guest:guest@rabbitmq:5672//
+      - CELERY_BROKER_URL=pyamqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672//
       - DJANGO_SETTINGS_MODULE=noodler.settings
     depends_on:
       - rabbitmq

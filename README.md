@@ -10,6 +10,9 @@ To run the entire application using Docker:
 git clone https://github.com/noodler-dev/noodler.git
 cd noodler
 
+# Optionally copy and customize environment variables
+cp .env.example .env
+
 docker compose up -d
 ```
 
@@ -19,6 +22,14 @@ This will start:
 - RabbitMQ message broker (management UI at `http://localhost:15672`)
 
 The database will be automatically migrated on first startup. The SQLite database and RabbitMQ data are persisted in Docker volumes.
+
+### Environment Variables
+
+You can customize the configuration by creating a `.env` file from `.env.example`:
+- `ALLOWED_HOSTS`: Comma-separated list of allowed hosts (default: `*`)
+- `RABBITMQ_USER`: RabbitMQ username (default: `guest`)
+- `RABBITMQ_PASSWORD`: RabbitMQ password (default: `guest`)
+- `CELERY_BROKER_URL`: Celery broker URL (default: `pyamqp://guest@localhost//` for local dev)
 
 To stop all services:
 

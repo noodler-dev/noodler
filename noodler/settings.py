@@ -26,7 +26,10 @@ SECRET_KEY = "django-insecure-h@7la@45r&wt@emzm24)_s=6jdy!3qkw2bi&*6j)r1r&7^2cfh
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"]  # Allow all hosts for Docker deployment
+# Allow all hosts by default for Docker deployment
+# Can be overridden via ALLOWED_HOSTS environment variable (comma-separated)
+_allowed_hosts = os.environ.get("ALLOWED_HOSTS", "*")
+ALLOWED_HOSTS = ["*"] if _allowed_hosts == "*" else [h.strip() for h in _allowed_hosts.split(",")]
 
 
 # Application definition
