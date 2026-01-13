@@ -13,12 +13,7 @@ cd noodler
 docker compose up -d
 ```
 
-This will start:
-- Django web server on `http://localhost:8000`
-- Celery worker for background tasks
-- RabbitMQ message broker (management UI at `http://localhost:15672`)
-
-The database will be automatically migrated on first startup. The SQLite database and RabbitMQ data are persisted in Docker volumes.
+You should now be able to visit [http://localhost:8000/accounts/login](http://localhost:8000/accounts/login`)
 
 To stop all services:
 
