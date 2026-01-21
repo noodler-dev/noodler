@@ -125,7 +125,7 @@ class TraceViewsTestCase(TestCase):
         response = self.client.get(reverse("traces:detail", args=[self.trace1.id]))
         # With auto-select, first project is automatically selected and view succeeds
         self.assertEqual(response.status_code, 200)
-        
+
         # Verify current project was set in session
         session = self.client.session
         self.assertEqual(session.get("current_project_id"), self.project1.id)
