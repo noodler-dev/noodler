@@ -169,18 +169,27 @@ def organization_delete(request, org_id):
     organization = request.current_organization
     organization_name = organization.name
 
-    # Check if organization has projects
+    # Check if organization has projects within a transaction with row lock
+    # to prevent race condition where a project could be created between
+    # the check and the delete
     from projects.models import Project
 
-    project_count = Project.objects.filter(organization=organization).count()
-    if project_count > 0:
-        messages.error(
-            request,
-            f'Cannot delete organization "{organization_name}" because it has {project_count} project(s). Please delete or move the projects first.',
+    with transaction.atomic():
+        # Lock the organization row to prevent concurrent modifications
+        locked_org = Organization.objects.select_for_update().get(
+            id=organization.id
         )
-        return redirect("accounts:organization_detail", org_id=organization.id)
+        project_count = Project.objects.filter(organization=locked_org).count()
+        if project_count > 0:
+            messages.error(
+                request,
+                f'Cannot delete organization "{organization_name}" because it has {project_count} project(s). Please delete or move the projects first.',
+            )
+            return redirect("accounts:organization_detail", org_id=organization.id)
 
-    organization.delete()
+        # Delete within the same transaction
+        locked_org.delete()
+
     messages.success(
         request, f'Organization "{organization_name}" deleted successfully.'
     )
