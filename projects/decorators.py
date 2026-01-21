@@ -1,7 +1,12 @@
 from functools import wraps
 from django.contrib import messages
 from django.shortcuts import redirect
-from .utils import get_user_projects
+from .utils import (
+    get_user_projects,
+    get_current_project,
+    set_current_project,
+    get_or_auto_select_project,
+)
 from .models import Project
 
 
@@ -9,6 +14,8 @@ def require_project_access(
     require_current_project=False,
     project_id_param="project_id",
     check_both=False,
+    auto_select=True,
+    auto_update=True,
 ):
     """
     Decorator to require project-level access for a view.
@@ -17,6 +24,8 @@ def require_project_access(
         require_current_project: If True, requires current_project_id in session
         project_id_param: Name of URL parameter containing project ID (default: 'project_id')
         check_both: If True, validates both URL project_id and session current_project match
+        auto_select: If True, automatically select first project if none is set (default: True)
+        auto_update: If True, automatically update current project when visiting project links (default: True)
 
     Usage:
         @login_required
@@ -48,41 +57,57 @@ def require_project_access(
                     messages.error(request, "You do not have access to this project.")
                     return redirect("projects:list")
 
+            # Auto-update: If we have a project from URL and auto_update is enabled,
+            # update the current project in session
+            if auto_update and project_id and project:
+                current_project = get_current_project(request.user, request.session)
+                if not current_project or current_project.id != project_id:
+                    set_current_project(request.session, project_id)
+
             # Handle session-based current_project requirement
-            current_project_id = request.session.get("current_project_id")
             if require_current_project:
-                if not current_project_id:
-                    messages.info(request, "Please select a project to view traces.")
-                    return redirect("projects:list")
+                current_project = get_current_project(request.user, request.session)
 
-                # Validate that the current project is still accessible
-                try:
-                    current_project = user_projects.get(id=current_project_id)
-                except Project.DoesNotExist:
-                    # Current project is no longer accessible, clear it from session
-                    del request.session["current_project_id"]
-                    messages.error(
-                        request, "The selected project is no longer accessible."
-                    )
-                    return redirect("projects:list")
-
-                # If check_both is True, ensure URL project_id matches session project_id
-                if check_both:
-                    if project_id and project_id != current_project_id:
-                        messages.error(
-                            request,
-                            "The project in the URL does not match your current project.",
+                # No current project set
+                if not current_project:
+                    if auto_select:
+                        # Auto-select first available project
+                        current_project = get_or_auto_select_project(
+                            request.user, request.session
                         )
+                        if current_project:
+                            project = current_project
+                        else:
+                            # User has no projects
+                            messages.info(
+                                request,
+                                "You don't have access to any projects. Please create one first.",
+                            )
+                            return redirect("projects:list")
+                    else:
+                        # Auto-select disabled, redirect to project list
+                        messages.info(request, "Please select a project to view traces.")
                         return redirect("projects:list")
-                    project = current_project
                 else:
-                    # Use session project if no URL project_id was provided
-                    if not project:
+                    # Current project exists and is valid
+                    # If check_both is True, ensure URL project_id matches session project_id
+                    if check_both:
+                        if project_id and project_id != current_project.id:
+                            messages.error(
+                                request,
+                                "The project in the URL does not match your current project.",
+                            )
+                            return redirect("projects:list")
                         project = current_project
+                    else:
+                        # Use session project if no URL project_id was provided
+                        if not project:
+                            project = current_project
 
             # If check_both is True but require_current_project is False, validate both match
-            elif check_both and project_id and current_project_id:
-                if project_id != current_project_id:
+            elif check_both and project_id:
+                current_project = get_current_project(request.user, request.session)
+                if current_project and project_id != current_project.id:
                     messages.error(
                         request,
                         "The project in the URL does not match your current project.",
