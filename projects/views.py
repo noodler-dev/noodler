@@ -112,9 +112,17 @@ def project_delete(request, project_id):
     project_name = request.current_project.name
     request.current_project.delete()
 
-    # Clear current project if it was deleted
-    if request.session.get("current_project_id") == project_id:
+    # Clear current project if it was deleted (check original value before auto-update)
+    # Use original_current_project_id which was set before the decorator auto-updated the session
+    # This prevents clearing the session when deleting a different project than the current one
+    original_current_project_id = getattr(request, "original_current_project_id", None)
+    if original_current_project_id == project_id:
+        # The deleted project was the original current project, clear it
         del request.session["current_project_id"]
+    elif original_current_project_id and original_current_project_id != project_id:
+        # The deleted project was different from the original current project
+        # Restore the original current project (auto-update changed it)
+        request.session["current_project_id"] = original_current_project_id
 
     messages.success(request, f'Project "{project_name}" deleted successfully.')
 

@@ -151,6 +151,29 @@ class ProjectViewsTestCase(TestCase):
         session = self.client.session
         self.assertNotIn("current_project_id", session)
 
+    def test_project_delete_preserves_different_current_project(self):
+        """Test that deleting a project different from current project preserves current project."""
+        self.client.login(username="user1", password="testpass123")
+        
+        # Create another project for user1
+        project3 = Project.objects.create(name="Project 3", organization=self.org1)
+        
+        # Set project1 as current project
+        session = self.client.session
+        session["current_project_id"] = self.project1.id
+        session.save()
+        
+        # Delete project3 (different from current project)
+        response = self.client.post(reverse("projects:delete", args=[project3.id]))
+        self.assertEqual(response.status_code, 302)
+        
+        # Current project should still be project1 (not cleared)
+        session = self.client.session
+        self.assertEqual(session.get("current_project_id"), self.project1.id)
+        
+        # Project3 should be deleted
+        self.assertFalse(Project.objects.filter(id=project3.id).exists())
+
     def test_project_switch_requires_post(self):
         """Test that project switch requires POST method."""
         self.client.login(username="user1", password="testpass123")

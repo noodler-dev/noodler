@@ -57,6 +57,9 @@ def require_project_access(
                     messages.error(request, "You do not have access to this project.")
                     return redirect("projects:list")
 
+            # Store original current_project_id BEFORE auto-update (for views that need it)
+            original_current_project_id = request.session.get("current_project_id")
+
             # Auto-update: If we have a project from URL and auto_update is enabled,
             # update the current project in session
             if auto_update and project_id and project:
@@ -128,6 +131,8 @@ def require_project_access(
             # Inject project and user_projects into request
             request.current_project = project
             request.user_projects = user_projects
+            # Store original current_project_id for views that need to check it before auto-update
+            request.original_current_project_id = original_current_project_id
 
             return view_func(request, *args, **kwargs)
 
