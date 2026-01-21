@@ -155,6 +155,7 @@ class Trace(models.Model):
     trace_id = models.CharField(max_length=32)
     started_at = models.DateTimeField()
     ended_at = models.DateTimeField()
+    service_name = models.CharField(max_length=50, null=True, blank=True)
     attributes = JSONField()
 
     def __str__(self):
