@@ -28,7 +28,9 @@ def format_duration(start, end):
 def trace_list(request):
     """List traces for the current project (from session). Requires a project to be selected."""
     # Filter traces by current project only
-    traces = Trace.objects.filter(project=request.current_project).order_by("-started_at")
+    traces = Trace.objects.filter(project=request.current_project).order_by(
+        "-started_at"
+    )
 
     # Calculate durations for each trace
     traces_with_duration = []

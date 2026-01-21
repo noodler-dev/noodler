@@ -86,7 +86,9 @@ def require_project_access(
                             return redirect("projects:list")
                     else:
                         # Auto-select disabled, redirect to project list
-                        messages.info(request, "Please select a project to view traces.")
+                        messages.info(
+                            request, "Please select a project to view traces."
+                        )
                         return redirect("projects:list")
                 else:
                     # Current project exists and is valid
@@ -132,4 +134,3 @@ def require_project_access(
         return wrapper
 
     return decorator
-

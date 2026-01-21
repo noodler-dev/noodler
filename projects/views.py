@@ -157,9 +157,7 @@ def api_key_create(request, project_id):
 @require_project_access(project_id_param="project_id")
 def api_key_created(request, project_id, key_id):
     """Show the newly created API key (raw key shown once)."""
-    api_key = get_object_or_404(
-        ApiKey, id=key_id, project=request.current_project
-    )
+    api_key = get_object_or_404(ApiKey, id=key_id, project=request.current_project)
 
     # Get raw key from session (one-time display)
     session_key = f"api_key_{key_id}"
@@ -188,9 +186,7 @@ def api_key_created(request, project_id, key_id):
 @require_POST
 def api_key_revoke(request, project_id, key_id):
     """Revoke an API key (sets revoked_at, does not hard-delete)."""
-    api_key = get_object_or_404(
-        ApiKey, id=key_id, project=request.current_project
-    )
+    api_key = get_object_or_404(ApiKey, id=key_id, project=request.current_project)
 
     from django.utils import timezone
 
@@ -207,9 +203,7 @@ def api_key_revoke(request, project_id, key_id):
 def project_switch(request, project_id):
     """Switch the current project (stored in session)."""
     request.session["current_project_id"] = request.current_project.id
-    messages.success(
-        request, f'Switched to project "{request.current_project.name}".'
-    )
+    messages.success(request, f'Switched to project "{request.current_project.name}".')
 
     # Support redirect to a different page via 'next' parameter
     # Validate the URL to prevent open redirect vulnerabilities
