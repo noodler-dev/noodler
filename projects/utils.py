@@ -1,16 +1,6 @@
 from accounts.models import Organization
+from accounts.utils import get_user_organizations
 from .models import Project
-
-
-def get_user_organizations(user):
-    """Get all organizations the user belongs to."""
-    try:
-        user_profile = user.userprofile
-        return Organization.objects.filter(
-            membership__user_profile=user_profile
-        ).distinct()
-    except AttributeError:
-        return Organization.objects.none()
 
 
 def get_user_projects(user):

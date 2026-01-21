@@ -2,7 +2,8 @@ from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
-from accounts.models import UserProfile
+from accounts.models import UserProfile, Organization, Membership
+from projects.models import Project
 
 User = get_user_model()
 
@@ -298,3 +299,422 @@ class LogoutViewTests(TestCase):
         response = self.client.get(self.logout_url)
 
         self.assertEqual(response.status_code, 405)  # Method Not Allowed
+
+
+class OrganizationListViewTests(TestCase):
+    def setUp(self):
+        self.list_url = reverse("accounts:organization_list")
+        self.user1 = User.objects.create_user(username="user1", password="testpass123")
+        self.user2 = User.objects.create_user(username="user2", password="testpass123")
+        self.user1_profile = UserProfile.objects.create(user=self.user1)
+        self.user2_profile = UserProfile.objects.create(user=self.user2)
+
+        # Create organizations
+        self.org1 = Organization.objects.create(name="Org 1")
+        self.org2 = Organization.objects.create(name="Org 2")
+
+        # Create memberships
+        Membership.objects.create(
+            user_profile=self.user1_profile, organization=self.org1, role="admin"
+        )
+        Membership.objects.create(
+            user_profile=self.user2_profile, organization=self.org2, role="admin"
+        )
+
+    def test_organization_list_requires_authentication(self):
+        """Test that organization list redirects unauthenticated users."""
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response.url)
+
+    def test_organization_list_shows_user_organizations(self):
+        """Test that organization list only shows organizations user belongs to."""
+        self.client.login(username="user1", password="testpass123")
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/organization_list.html")
+        self.assertContains(response, "Org 1")
+        self.assertNotContains(response, "Org 2")
+
+    def test_organization_list_empty_shows_message(self):
+        """Test that empty organization list shows helpful message."""
+        user3 = User.objects.create_user(username="user3", password="testpass123")
+        UserProfile.objects.create(user=user3)
+        self.client.login(username="user3", password="testpass123")
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "No organizations found")
+
+
+class OrganizationCreateViewTests(TestCase):
+    def setUp(self):
+        self.create_url = reverse("accounts:organization_create")
+        self.user = User.objects.create_user(username="user1", password="testpass123")
+        self.user_profile = UserProfile.objects.create(user=self.user)
+
+    def test_organization_create_requires_authentication(self):
+        """Test that organization create redirects unauthenticated users."""
+        response = self.client.get(self.create_url)
+        self.assertEqual(response.status_code, 302)
+
+    def test_organization_create_get_shows_form(self):
+        """Test that GET request shows the create form."""
+        self.client.login(username="user1", password="testpass123")
+        response = self.client.get(self.create_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/organization_new.html")
+        self.assertContains(response, "form")
+
+    def test_organization_create_with_valid_name(self):
+        """Test creating an organization with valid name."""
+        self.client.login(username="user1", password="testpass123")
+        org_count_before = Organization.objects.count()
+        membership_count_before = Membership.objects.count()
+
+        response = self.client.post(self.create_url, {"name": "New Org"})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Organization.objects.count(), org_count_before + 1)
+        self.assertEqual(Membership.objects.count(), membership_count_before + 1)
+
+        org = Organization.objects.get(name="New Org")
+        membership = Membership.objects.get(
+            user_profile=self.user_profile, organization=org
+        )
+        self.assertEqual(membership.role, "admin")
+
+    def test_organization_create_creates_admin_membership(self):
+        """Test that creating an organization creates admin membership for creator."""
+        self.client.login(username="user1", password="testpass123")
+        response = self.client.post(self.create_url, {"name": "New Org"})
+
+        self.assertEqual(response.status_code, 302)
+        org = Organization.objects.get(name="New Org")
+        membership = Membership.objects.get(
+            user_profile=self.user_profile, organization=org
+        )
+        self.assertEqual(membership.role, "admin")
+
+    def test_organization_create_redirects_to_detail(self):
+        """Test that successful creation redirects to organization detail."""
+        self.client.login(username="user1", password="testpass123")
+        response = self.client.post(self.create_url, {"name": "New Org"})
+
+        org = Organization.objects.get(name="New Org")
+        self.assertRedirects(
+            response, reverse("accounts:organization_detail", args=[org.id])
+        )
+
+    def test_organization_create_shows_success_message(self):
+        """Test that success message is displayed after creation."""
+        self.client.login(username="user1", password="testpass123")
+        response = self.client.post(self.create_url, {"name": "New Org"}, follow=True)
+        messages = list(get_messages(response.wsgi_request))
+
+        self.assertEqual(len(messages), 1)
+        self.assertIn("created successfully", str(messages[0]))
+
+    def test_organization_create_empty_name_shows_error(self):
+        """Test that empty name shows error message."""
+        self.client.login(username="user1", password="testpass123")
+        org_count_before = Organization.objects.count()
+
+        response = self.client.post(self.create_url, {"name": ""})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Organization.objects.count(), org_count_before)
+        messages = list(get_messages(response.wsgi_request))
+        self.assertEqual(len(messages), 1)
+        self.assertIn("required", str(messages[0]).lower())
+
+    def test_organization_create_whitespace_only_name_shows_error(self):
+        """Test that whitespace-only name shows error."""
+        self.client.login(username="user1", password="testpass123")
+        org_count_before = Organization.objects.count()
+
+        response = self.client.post(self.create_url, {"name": "   "})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Organization.objects.count(), org_count_before)
+
+
+class OrganizationDetailViewTests(TestCase):
+    def setUp(self):
+        self.user1 = User.objects.create_user(username="user1", password="testpass123")
+        self.user2 = User.objects.create_user(username="user2", password="testpass123")
+        self.user1_profile = UserProfile.objects.create(user=self.user1)
+        self.user2_profile = UserProfile.objects.create(user=self.user2)
+
+        self.org1 = Organization.objects.create(name="Org 1")
+        self.org2 = Organization.objects.create(name="Org 2")
+
+        Membership.objects.create(
+            user_profile=self.user1_profile, organization=self.org1, role="admin"
+        )
+        Membership.objects.create(
+            user_profile=self.user2_profile, organization=self.org2, role="member"
+        )
+
+    def test_organization_detail_requires_authentication(self):
+        """Test that organization detail redirects unauthenticated users."""
+        response = self.client.get(
+            reverse("accounts:organization_detail", args=[self.org1.id])
+        )
+        self.assertEqual(response.status_code, 302)
+
+    def test_organization_detail_access_control(self):
+        """Test that users cannot view organizations they don't belong to."""
+        self.client.login(username="user1", password="testpass123")
+        response = self.client.get(
+            reverse("accounts:organization_detail", args=[self.org2.id])
+        )
+        self.assertEqual(response.status_code, 302)  # Redirects with error
+
+    def test_organization_detail_shows_organization_info(self):
+        """Test that detail view shows organization information."""
+        self.client.login(username="user1", password="testpass123")
+        response = self.client.get(
+            reverse("accounts:organization_detail", args=[self.org1.id])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/organization_detail.html")
+        self.assertContains(response, "Org 1")
+
+    def test_organization_detail_shows_projects(self):
+        """Test that detail view shows organization's projects."""
+        self.client.login(username="user1", password="testpass123")
+        project1 = Project.objects.create(name="Project 1", organization=self.org1)
+        project2 = Project.objects.create(name="Project 2", organization=self.org1)
+
+        response = self.client.get(
+            reverse("accounts:organization_detail", args=[self.org1.id])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Project 1")
+        self.assertContains(response, "Project 2")
+
+    def test_organization_detail_shows_admin_actions_for_admin(self):
+        """Test that admin users see edit/delete actions."""
+        self.client.login(username="user1", password="testpass123")
+        response = self.client.get(
+            reverse("accounts:organization_detail", args=[self.org1.id])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Edit")
+        self.assertContains(response, "Delete")
+
+    def test_organization_detail_hides_admin_actions_for_member(self):
+        """Test that non-admin members don't see edit/delete actions."""
+        self.client.login(username="user2", password="testpass123")
+        response = self.client.get(
+            reverse("accounts:organization_detail", args=[self.org2.id])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Edit")
+        self.assertNotContains(response, "Delete")
+
+
+class OrganizationEditViewTests(TestCase):
+    def setUp(self):
+        self.user1 = User.objects.create_user(username="user1", password="testpass123")
+        self.user2 = User.objects.create_user(username="user2", password="testpass123")
+        self.user1_profile = UserProfile.objects.create(user=self.user1)
+        self.user2_profile = UserProfile.objects.create(user=self.user2)
+
+        self.org1 = Organization.objects.create(name="Org 1")
+        self.org2 = Organization.objects.create(name="Org 2")
+
+        Membership.objects.create(
+            user_profile=self.user1_profile, organization=self.org1, role="admin"
+        )
+        Membership.objects.create(
+            user_profile=self.user2_profile, organization=self.org2, role="member"
+        )
+
+    def test_organization_edit_requires_authentication(self):
+        """Test that organization edit redirects unauthenticated users."""
+        response = self.client.get(
+            reverse("accounts:organization_edit", args=[self.org1.id])
+        )
+        self.assertEqual(response.status_code, 302)
+
+    def test_organization_edit_requires_admin(self):
+        """Test that only admins can edit organizations."""
+        self.client.login(username="user2", password="testpass123")
+        response = self.client.get(
+            reverse("accounts:organization_edit", args=[self.org2.id])
+        )
+        self.assertEqual(response.status_code, 302)  # Redirects with error
+
+    def test_organization_edit_access_control(self):
+        """Test that users cannot edit organizations they don't belong to."""
+        self.client.login(username="user1", password="testpass123")
+        response = self.client.post(
+            reverse("accounts:organization_edit", args=[self.org2.id]),
+            {"name": "Hacked Org"},
+        )
+        self.assertEqual(response.status_code, 302)  # Redirects with error
+        self.org2.refresh_from_db()
+        self.assertEqual(self.org2.name, "Org 2")
+
+    def test_organization_edit_get_shows_form(self):
+        """Test that GET request shows edit form."""
+        self.client.login(username="user1", password="testpass123")
+        response = self.client.get(
+            reverse("accounts:organization_edit", args=[self.org1.id])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/organization_edit.html")
+        self.assertContains(response, self.org1.name)
+
+    def test_organization_edit_updates_name(self):
+        """Test that organization edit updates the organization name."""
+        self.client.login(username="user1", password="testpass123")
+        response = self.client.post(
+            reverse("accounts:organization_edit", args=[self.org1.id]),
+            {"name": "Updated Org 1"},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.org1.refresh_from_db()
+        self.assertEqual(self.org1.name, "Updated Org 1")
+
+    def test_organization_edit_redirects_to_detail(self):
+        """Test that successful edit redirects to organization detail."""
+        self.client.login(username="user1", password="testpass123")
+        response = self.client.post(
+            reverse("accounts:organization_edit", args=[self.org1.id]),
+            {"name": "Updated Org 1"},
+        )
+        self.assertRedirects(
+            response, reverse("accounts:organization_detail", args=[self.org1.id])
+        )
+
+    def test_organization_edit_shows_success_message(self):
+        """Test that success message is displayed after edit."""
+        self.client.login(username="user1", password="testpass123")
+        response = self.client.post(
+            reverse("accounts:organization_edit", args=[self.org1.id]),
+            {"name": "Updated Org 1"},
+            follow=True,
+        )
+        messages = list(get_messages(response.wsgi_request))
+        self.assertEqual(len(messages), 1)
+        self.assertIn("updated successfully", str(messages[0]).lower())
+
+    def test_organization_edit_empty_name_shows_error(self):
+        """Test that empty name shows error message."""
+        self.client.login(username="user1", password="testpass123")
+        response = self.client.post(
+            reverse("accounts:organization_edit", args=[self.org1.id]), {"name": ""}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.org1.refresh_from_db()
+        self.assertEqual(self.org1.name, "Org 1")  # Unchanged
+        messages = list(get_messages(response.wsgi_request))
+        self.assertEqual(len(messages), 1)
+        self.assertIn("required", str(messages[0]).lower())
+
+
+class OrganizationDeleteViewTests(TestCase):
+    def setUp(self):
+        self.user1 = User.objects.create_user(username="user1", password="testpass123")
+        self.user2 = User.objects.create_user(username="user2", password="testpass123")
+        self.user1_profile = UserProfile.objects.create(user=self.user1)
+        self.user2_profile = UserProfile.objects.create(user=self.user2)
+
+        self.org1 = Organization.objects.create(name="Org 1")
+        self.org2 = Organization.objects.create(name="Org 2")
+
+        Membership.objects.create(
+            user_profile=self.user1_profile, organization=self.org1, role="admin"
+        )
+        Membership.objects.create(
+            user_profile=self.user2_profile, organization=self.org2, role="member"
+        )
+
+    def test_organization_delete_requires_authentication(self):
+        """Test that organization delete redirects unauthenticated users."""
+        response = self.client.post(
+            reverse("accounts:organization_delete", args=[self.org1.id])
+        )
+        self.assertEqual(response.status_code, 302)
+
+    def test_organization_delete_requires_post(self):
+        """Test that organization delete requires POST method."""
+        self.client.login(username="user1", password="testpass123")
+        response = self.client.get(
+            reverse("accounts:organization_delete", args=[self.org1.id])
+        )
+        self.assertEqual(response.status_code, 405)  # Method not allowed
+
+    def test_organization_delete_requires_admin(self):
+        """Test that only admins can delete organizations."""
+        self.client.login(username="user2", password="testpass123")
+        response = self.client.post(
+            reverse("accounts:organization_delete", args=[self.org2.id])
+        )
+        self.assertEqual(response.status_code, 302)  # Redirects with error
+        self.assertTrue(Organization.objects.filter(id=self.org2.id).exists())
+
+    def test_organization_delete_access_control(self):
+        """Test that users cannot delete organizations they don't belong to."""
+        self.client.login(username="user1", password="testpass123")
+        org_id = self.org2.id
+        response = self.client.post(
+            reverse("accounts:organization_delete", args=[org_id])
+        )
+        self.assertEqual(response.status_code, 302)  # Redirects with error
+        self.assertTrue(Organization.objects.filter(id=org_id).exists())
+
+    def test_organization_delete_removes_organization(self):
+        """Test that organization delete removes the organization."""
+        self.client.login(username="user1", password="testpass123")
+        org_id = self.org1.id
+        response = self.client.post(
+            reverse("accounts:organization_delete", args=[org_id])
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Organization.objects.filter(id=org_id).exists())
+
+    def test_organization_delete_redirects_to_list(self):
+        """Test that successful delete redirects to organization list."""
+        self.client.login(username="user1", password="testpass123")
+        response = self.client.post(
+            reverse("accounts:organization_delete", args=[self.org1.id])
+        )
+        self.assertRedirects(response, reverse("accounts:organization_list"))
+
+    def test_organization_delete_shows_success_message(self):
+        """Test that success message is displayed after delete."""
+        self.client.login(username="user1", password="testpass123")
+        response = self.client.post(
+            reverse("accounts:organization_delete", args=[self.org1.id]), follow=True
+        )
+        messages = list(get_messages(response.wsgi_request))
+        self.assertEqual(len(messages), 1)
+        self.assertIn("deleted successfully", str(messages[0]).lower())
+
+    def test_organization_delete_prevents_deletion_with_projects(self):
+        """Test that organization cannot be deleted if it has projects."""
+        self.client.login(username="user1", password="testpass123")
+        Project.objects.create(name="Project 1", organization=self.org1)
+
+        org_id = self.org1.id
+        response = self.client.post(
+            reverse("accounts:organization_delete", args=[org_id])
+        )
+        self.assertEqual(response.status_code, 302)  # Redirects with error
+        self.assertTrue(Organization.objects.filter(id=org_id).exists())
+
+    def test_organization_delete_with_projects_shows_error(self):
+        """Test that error message is shown when trying to delete org with projects."""
+        self.client.login(username="user1", password="testpass123")
+        Project.objects.create(name="Project 1", organization=self.org1)
+
+        response = self.client.post(
+            reverse("accounts:organization_delete", args=[self.org1.id]), follow=True
+        )
+        messages = list(get_messages(response.wsgi_request))
+        self.assertEqual(len(messages), 1)
+        self.assertIn("cannot delete", str(messages[0]).lower())
+        self.assertIn("project", str(messages[0]).lower())
