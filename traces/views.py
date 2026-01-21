@@ -2,8 +2,7 @@ import json
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.shortcuts import render, get_object_or_404, redirect
-from projects.views import get_user_projects
-from projects.models import Project
+from projects.decorators import require_project_access
 from .models import Trace, Span
 
 
@@ -25,27 +24,13 @@ def format_duration(start, end):
 
 
 @login_required
+@require_project_access(require_current_project=True)
 def trace_list(request):
     """List traces for the current project (from session). Requires a project to be selected."""
-    user_projects = get_user_projects(request.user)
-    current_project_id = request.session.get("current_project_id")
-
-    # Require a current project to be set
-    if not current_project_id:
-        messages.info(request, "Please select a project to view traces.")
-        return redirect("projects:list")
-
-    # Validate that the current project is still accessible to the user
-    try:
-        current_project = user_projects.get(id=current_project_id)
-    except Project.DoesNotExist:
-        # Current project is no longer accessible, clear it from session
-        del request.session["current_project_id"]
-        messages.error(request, "The selected project is no longer accessible.")
-        return redirect("projects:list")
-
     # Filter traces by current project only
-    traces = Trace.objects.filter(project=current_project).order_by("-started_at")
+    traces = Trace.objects.filter(project=request.current_project).order_by(
+        "-started_at"
+    )
 
     # Calculate durations for each trace
     traces_with_duration = []
@@ -60,27 +45,21 @@ def trace_list(request):
 
     context = {
         "traces_with_duration": traces_with_duration,
-        "current_project": current_project,
-        "user_projects": user_projects,
+        "current_project": request.current_project,
+        "user_projects": request.user_projects,
     }
     return render(request, "traces/list.html", context)
 
 
 @login_required
+@require_project_access(require_current_project=True)
 def trace_detail(request, trace_id):
     """View trace details and all associated spans."""
     trace = get_object_or_404(Trace, id=trace_id)
 
     # Check access - user must have access to the trace's project
-    user_projects = get_user_projects(request.user)
-    if trace.project not in user_projects:
+    if trace.project not in request.user_projects:
         messages.error(request, "You do not have access to this trace.")
-        return redirect("projects:list")
-
-    # Require a current project to be set
-    current_project_id = request.session.get("current_project_id")
-    if not current_project_id:
-        messages.info(request, "Please select a project to view traces.")
         return redirect("projects:list")
 
     # Get all spans for this trace, ordered by start_time
@@ -121,20 +100,10 @@ def trace_detail(request, trace_id):
             }
         )
 
-    # Get current project from session for context
-    current_project_id = request.session.get("current_project_id")
-    current_project = None
-    if current_project_id:
-        user_projects = get_user_projects(request.user)
-        try:
-            current_project = user_projects.get(id=current_project_id)
-        except Project.DoesNotExist:
-            pass
-
     context = {
         "trace": trace,
         "trace_duration": trace_duration,
         "spans_with_duration": spans_with_duration,
-        "current_project": current_project,
+        "current_project": request.current_project,
     }
     return render(request, "traces/detail.html", context)

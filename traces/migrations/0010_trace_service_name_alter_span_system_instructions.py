@@ -4,20 +4,23 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('traces', '0009_span_system_instructions'),
+        ("traces", "0009_span_system_instructions"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='trace',
-            name='service_name',
+            model_name="trace",
+            name="service_name",
             field=models.CharField(blank=True, max_length=50, null=True),
         ),
         migrations.AlterField(
-            model_name='span',
-            name='system_instructions',
-            field=models.JSONField(blank=True, help_text='This is different from the system prompt, some providers allow instructions to be sent separately from the chat history.', null=True),
+            model_name="span",
+            name="system_instructions",
+            field=models.JSONField(
+                blank=True,
+                help_text="This is different from the system prompt, some providers allow instructions to be sent separately from the chat history.",
+                null=True,
+            ),
         ),
     ]

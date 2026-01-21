@@ -75,7 +75,7 @@ class TraceViewsTestCase(TestCase):
         self.assertIn("/accounts/login/", response.url)
 
     def test_trace_list_clears_invalid_current_project(self):
-        """Test that invalid current_project_id redirects to projects list."""
+        """Test that invalid current_project_id is cleared and first project is auto-selected."""
         self.client.login(username="user1", password="testpass123")
 
         # Set invalid project ID in session
@@ -84,12 +84,12 @@ class TraceViewsTestCase(TestCase):
         session.save()
 
         response = self.client.get(reverse("traces:list"))
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse("projects:list"))
+        # With auto-select, invalid project is cleared and first valid project is selected
+        self.assertEqual(response.status_code, 200)
 
-        # Session should be cleared
+        # Session should be updated to first valid project
         session = self.client.session
-        self.assertNotIn("current_project_id", session)
+        self.assertEqual(session.get("current_project_id"), self.project1.id)
 
     def test_trace_list_empty_for_user_with_no_traces(self):
         """Test that trace list shows empty message when user has no traces for current project."""
@@ -120,11 +120,15 @@ class TraceViewsTestCase(TestCase):
         self.assertIn("/accounts/login/", response.url)
 
     def test_trace_detail_requires_current_project(self):
-        """Test that trace detail requires a current project to be set."""
+        """Test that trace detail auto-selects first project when none is set."""
         self.client.login(username="user1", password="testpass123")
         response = self.client.get(reverse("traces:detail", args=[self.trace1.id]))
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse("projects:list"))
+        # With auto-select, first project is automatically selected and view succeeds
+        self.assertEqual(response.status_code, 200)
+
+        # Verify current project was set in session
+        session = self.client.session
+        self.assertEqual(session.get("current_project_id"), self.project1.id)
 
     def test_trace_detail_access_control(self):
         """Test that users cannot view traces outside their projects."""
