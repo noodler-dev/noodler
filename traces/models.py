@@ -87,6 +87,14 @@ class RawTrace(models.Model):
         if not spans_data:
             return None
 
+        # Try to autopopulate Trace.service_name from OTel resource attributes.
+        # Example: {"service.name": "noodler-service", ...}
+        service_name = resource_attributes.get("service.name")
+        if not isinstance(service_name, str):
+            service_name = None
+        if service_name:
+            service_name = service_name[:50]
+
         # Calculate trace timestamps from spans
         start_times = [s["start_time"] for s in spans_data if s.get("start_time")]
         end_times = [s["end_time"] for s in spans_data if s.get("end_time")]
@@ -107,6 +115,7 @@ class RawTrace(models.Model):
             defaults={
                 "started_at": started_at,
                 "ended_at": ended_at,
+                "service_name": service_name,
                 "attributes": resource_attributes,
             },
         )
@@ -115,6 +124,8 @@ class RawTrace(models.Model):
         if not created:
             trace.started_at = started_at
             trace.ended_at = ended_at
+            if service_name:
+                trace.service_name = service_name
             trace.attributes = resource_attributes
             trace.save()
 
