@@ -119,9 +119,7 @@ def organization_detail(request, org_id):
     # Get projects for this organization
     from projects.models import Project
 
-    projects = Project.objects.filter(organization=organization).order_by(
-        "-created_at"
-    )
+    projects = Project.objects.filter(organization=organization).order_by("-created_at")
 
     context = {
         "organization": organization,

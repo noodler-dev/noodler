@@ -73,4 +73,3 @@ def require_organization_access(
         return wrapper
 
     return decorator
-

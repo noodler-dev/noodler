@@ -31,4 +31,3 @@ def is_organization_admin(user, organization):
         return membership.role == "admin"
     except (AttributeError, Membership.DoesNotExist):
         return False
-
