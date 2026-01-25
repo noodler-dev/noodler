@@ -39,19 +39,23 @@ def extract_conversation_messages(spans):
                 role = msg.get("role")
                 if role in ("user", "system"):
                     parts = msg.get("parts", [])
+                    content_parts = []
                     for part in parts:
                         if isinstance(part, dict) and part.get("type") == "text":
                             content = part.get("content", "")
                             if content:
-                                conversation.append(
-                                    {
-                                        "role": role,
-                                        "content": content,
-                                        "span_id": span.id,
-                                        "span_name": span.name,
-                                        "timestamp": span.start_time,
-                                    }
-                                )
+                                content_parts.append(content)
+                    
+                    if content_parts:
+                        conversation.append(
+                            {
+                                "role": role,
+                                "content": "\n".join(content_parts),
+                                "span_id": span.id,
+                                "span_name": span.name,
+                                "timestamp": span.start_time,
+                            }
+                        )
 
         # Extract output messages (assistant messages)
         if span.output_messages and isinstance(span.output_messages, list):
