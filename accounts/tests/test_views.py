@@ -31,7 +31,7 @@ class SignUpViewTests(TestCase):
             "password1": "testpass123",
             "password2": "testpass123",
         }
-        response = self.client.post(self.signup_url, data)
+        self.client.post(self.signup_url, data)
         user_count_after = User.objects.count()
 
         self.assertEqual(user_count_after, user_count_before + 1)
@@ -47,7 +47,7 @@ class SignUpViewTests(TestCase):
             "password1": "testpass123",
             "password2": "testpass123",
         }
-        response = self.client.post(self.signup_url, data)
+        self.client.post(self.signup_url, data)
 
         user = User.objects.get(username="testuser")
         self.assertTrue(UserProfile.objects.filter(user=user).exists())
@@ -96,7 +96,7 @@ class SignUpViewTests(TestCase):
             "password1": "testpass123",
             "password2": "differentpass",
         }
-        response = self.client.post(self.signup_url, data)
+        self.client.post(self.signup_url, data)
         user_count_after = User.objects.count()
 
         self.assertEqual(user_count_after, user_count_before)
@@ -167,7 +167,7 @@ class SignUpViewTests(TestCase):
             "password1": "testpass123",
             "password2": "testpass123",
         }
-        response = self.client.post(self.signup_url, data)
+        self.client.post(self.signup_url, data)
 
         user = User.objects.get(username="testuser")
         user_profile = user.userprofile
@@ -190,7 +190,7 @@ class SignUpViewTests(TestCase):
             "password1": "testpass123",
             "password2": "testpass123",
         }
-        response = self.client.post(self.signup_url, data)
+        self.client.post(self.signup_url, data)
 
         user = User.objects.get(username="testuser")
         user_profile = user.userprofile
@@ -258,7 +258,7 @@ class SignUpViewTests(TestCase):
             "password1": "testpass123",
             "password2": "testpass123",
         }
-        response = self.client.post(self.signup_url, data)
+        self.client.post(self.signup_url, data)
 
         user = User.objects.get(username="testuser")
         self.assertEqual(user.first_name, "John")
@@ -615,8 +615,8 @@ class OrganizationDetailViewTests(TestCase):
     def test_organization_detail_shows_projects(self):
         """Test that detail view shows organization's projects."""
         self.client.login(username="user1", password="testpass123")
-        project1 = Project.objects.create(name="Project 1", organization=self.org1)
-        project2 = Project.objects.create(name="Project 2", organization=self.org1)
+        Project.objects.create(name="Project 1", organization=self.org1)
+        Project.objects.create(name="Project 2", organization=self.org1)
 
         response = self.client.get(
             reverse("accounts:organization_detail", args=[self.org1.uid])

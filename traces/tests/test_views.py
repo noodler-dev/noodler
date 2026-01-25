@@ -175,7 +175,7 @@ class TraceViewsTestCase(TestCase):
         """Test that spans from other traces are not shown."""
         # Create another span for trace1
         now = timezone.now()
-        span3 = Span.objects.create(
+        Span.objects.create(
             name="Span 3",
             trace=self.trace1,
             otel_span_id="span3",

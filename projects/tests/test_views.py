@@ -215,8 +215,8 @@ class ProjectViewsTestCase(TestCase):
         session = self.client.session
         self.assertEqual(session.get("current_project_id"), self.project1.id)
 
-    def test_project_detail_auto_updates_current_project(self):
-        """Test that visiting a project detail page auto-updates current project."""
+    def test_project_detail_does_not_auto_update_current_project(self):
+        """Test that visiting a project detail page does not auto-update current project."""
         self.client.login(username="user1", password="testpass123")
 
         # Set a different project as current
@@ -231,42 +231,7 @@ class ProjectViewsTestCase(TestCase):
         response = self.client.get(reverse("projects:detail", args=[project3.uid]))
         self.assertEqual(response.status_code, 200)
 
-        # Current project should be updated to project3
-        session = self.client.session
-        self.assertEqual(session.get("current_project_id"), project3.id)
-
-    def test_project_detail_auto_selects_when_no_current_project(self):
-        """Test that visiting a project detail page auto-selects it when no current project is set."""
-        self.client.login(username="user1", password="testpass123")
-
-        # Ensure no current project is set
-        session = self.client.session
-        if "current_project_id" in session:
-            del session["current_project_id"]
-        session.save()
-
-        # Visit project detail page
-        response = self.client.get(reverse("projects:detail", args=[self.project1.uid]))
-        self.assertEqual(response.status_code, 200)
-
-        # Current project should be auto-selected
-        session = self.client.session
-        self.assertEqual(session.get("current_project_id"), self.project1.id)
-
-    def test_project_detail_clears_invalid_current_project(self):
-        """Test that visiting a project detail page clears invalid current project and sets new one."""
-        self.client.login(username="user1", password="testpass123")
-
-        # Set invalid project ID in session
-        session = self.client.session
-        session["current_project_id"] = 99999
-        session.save()
-
-        # Visit a valid project detail page
-        response = self.client.get(reverse("projects:detail", args=[self.project1.uid]))
-        self.assertEqual(response.status_code, 200)
-
-        # Invalid project should be cleared and replaced with valid one
+        # Current project should remain unchanged (still project1)
         session = self.client.session
         self.assertEqual(session.get("current_project_id"), self.project1.id)
 
