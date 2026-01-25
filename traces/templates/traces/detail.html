@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Trace {{ trace.trace_id }}{% endblock %}
+{% block title %}Trace {{ trace.otel_trace_id }}{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
@@ -8,7 +8,7 @@
         <div>
             <h1>Trace Details</h1>
             <p class="text-muted mb-0">
-                <code>{{ trace.trace_id }}</code> • {{ trace.project.name }}
+                <code>{{ trace.otel_trace_id }}</code> • {{ trace.project.name }}
                 {% if current_project and current_project.id != trace.project.id %}
                     <span class="badge bg-warning ms-2">Different from current project</span>
                 {% endif %}
@@ -35,7 +35,7 @@
                 <div class="card-body">
                     <dl class="row mb-0">
                         <dt class="col-sm-4">Trace ID:</dt>
-                        <dd class="col-sm-8"><code>{{ trace.trace_id }}</code></dd>
+                        <dd class="col-sm-8"><code>{{ trace.otel_trace_id }}</code></dd>
                         
                         <dt class="col-sm-4">Project:</dt>
                         <dd class="col-sm-8">{{ trace.project.name }}</dd>

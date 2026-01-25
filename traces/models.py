@@ -111,7 +111,7 @@ class RawTrace(models.Model):
 
         # Create or get Trace
         trace, created = Trace.objects.get_or_create(
-            trace_id=trace_id,
+            otel_trace_id=trace_id,
             project=self.project,
             defaults={
                 "started_at": started_at,
@@ -167,14 +167,14 @@ class Trace(models.Model):
         default=uuid.uuid4, editable=False, unique=True, db_index=True
     )
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    trace_id = models.CharField(max_length=32)
+    otel_trace_id = models.CharField(max_length=32)
     started_at = models.DateTimeField()
     ended_at = models.DateTimeField()
     service_name = models.CharField(max_length=50, null=True, blank=True)
     attributes = JSONField()
 
     def __str__(self):
-        return self.trace_id
+        return self.otel_trace_id
 
 
 class Span(models.Model):

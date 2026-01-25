@@ -61,7 +61,7 @@
                     {% for item in traces_with_duration %}
                         <tr>
                             <td>
-                                <code>{{ item.trace.trace_id }}</code>
+                                <code>{{ item.trace.otel_trace_id }}</code>
                             </td>
                             <td>{{ item.trace.started_at|date:"M d, Y H:i:s" }}</td>
                             <td>{{ item.trace.ended_at|date:"M d, Y H:i:s" }}</td>

@@ -38,14 +38,14 @@ class TraceViewsTestCase(TestCase):
         # Create traces
         now = timezone.now()
         self.trace1 = Trace.objects.create(
-            trace_id="trace1",
+            otel_trace_id="trace1",
             project=self.project1,
             started_at=now,
             ended_at=now,
             attributes={},
         )
         self.trace2 = Trace.objects.create(
-            trace_id="trace2",
+            otel_trace_id="trace2",
             project=self.project2,
             started_at=now,
             ended_at=now,
