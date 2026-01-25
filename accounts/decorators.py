@@ -6,26 +6,26 @@ from .models import Organization
 
 
 def require_organization_access(
-    org_id_param="org_id",
+    org_id_param="org_uid",
     require_admin=False,
 ):
     """
     Decorator to require organization-level access for a view.
 
     Args:
-        org_id_param: Name of URL parameter containing organization ID (default: 'org_id')
+        org_id_param: Name of URL parameter containing organization UID (default: 'org_uid')
         require_admin: If True, requires user to be an admin of the organization (default: False)
 
     Usage:
         @login_required
-        @require_organization_access(org_id_param='org_id')
-        def organization_detail(request, org_id):
+        @require_organization_access(org_id_param='org_uid')
+        def organization_detail(request, org_uid):
             # request.current_organization is already set and validated
             ...
 
         @login_required
-        @require_organization_access(org_id_param='org_id', require_admin=True)
-        def organization_edit(request, org_id):
+        @require_organization_access(org_id_param='org_uid', require_admin=True)
+        def organization_edit(request, org_uid):
             # request.current_organization is already set and validated
             # User is guaranteed to be an admin
             ...
@@ -35,12 +35,12 @@ def require_organization_access(
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
             organization = None
-            org_id = None
+            org_uid = None
 
-            # Get org_id from URL parameters if specified
+            # Get org_uid from URL parameters if specified
             if org_id_param in kwargs:
-                org_id = kwargs[org_id_param]
-                organization = get_user_organization(request.user, org_id)
+                org_uid = kwargs[org_id_param]
+                organization = get_user_organization(request.user, org_uid)
                 if not organization:
                     messages.error(
                         request, "You do not have access to this organization."
@@ -56,7 +56,7 @@ def require_organization_access(
                         request,
                         "You must be an admin to perform this action.",
                     )
-                    return redirect("accounts:organization_detail", org_id=org_id)
+                    return redirect("accounts:organization_detail", org_uid=org_uid)
 
             # Ensure we have an organization if one was required
             if org_id_param in kwargs and not organization:

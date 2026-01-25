@@ -1,8 +1,10 @@
+import uuid
 from django.db import models
 from django.contrib.auth.models import User
 
 
 class Organization(models.Model):
+    uid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
     name = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
 

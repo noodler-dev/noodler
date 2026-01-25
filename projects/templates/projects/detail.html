@@ -11,14 +11,14 @@
         </div>
         <div>
             {% if not is_current_project %}
-                <form method="post" action="{% url 'projects:switch' project.id %}" class="d-inline">
+                <form method="post" action="{% url 'projects:switch' project.uid %}" class="d-inline">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-primary">Switch to This Project</button>
                 </form>
             {% else %}
                 <span class="badge bg-success">Current Project</span>
             {% endif %}
-            <a href="{% url 'projects:edit' project.id %}" class="btn btn-outline-secondary">Edit</a>
+            <a href="{% url 'projects:edit' project.uid %}" class="btn btn-outline-secondary">Edit</a>
         </div>
     </div>
 
@@ -57,7 +57,7 @@
                                             <td>{{ key.name }}</td>
                                             <td>{{ key.created_at|date:"M d, Y H:i" }}</td>
                                             <td>
-                                                <form method="post" action="{% url 'projects:key_revoke' project.id key.id %}" class="d-inline" onsubmit="return confirm('Are you sure you want to revoke this API key?');">
+                                                <form method="post" action="{% url 'projects:key_revoke' project.uid key.uid %}" class="d-inline" onsubmit="return confirm('Are you sure you want to revoke this API key?');">
                                                     {% csrf_token %}
                                                     <button type="submit" class="btn btn-sm btn-outline-danger">Revoke</button>
                                                 </form>
@@ -76,7 +76,7 @@
     </div>
 
     <div class="mt-4">
-        <form method="post" action="{% url 'projects:delete' project.id %}" onsubmit="return confirm('Are you sure you want to delete this project? This action cannot be undone.');">
+        <form method="post" action="{% url 'projects:delete' project.uid %}" onsubmit="return confirm('Are you sure you want to delete this project? This action cannot be undone.');">
             {% csrf_token %}
             <button type="submit" class="btn btn-danger">Delete Project</button>
         </form>
@@ -87,7 +87,7 @@
 <div class="modal fade" id="createKeyModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="post" action="{% url 'projects:key_create' project.id %}">
+            <form method="post" action="{% url 'projects:key_create' project.uid %}">
                 {% csrf_token %}
                 <div class="modal-header">
                     <h5 class="modal-title">Create API Key</h5>

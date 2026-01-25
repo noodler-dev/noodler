@@ -402,7 +402,7 @@ class OrganizationCreateViewTests(TestCase):
 
         org = Organization.objects.get(name="New Org")
         self.assertRedirects(
-            response, reverse("accounts:organization_detail", args=[org.id])
+            response, reverse("accounts:organization_detail", args=[org.uid])
         )
 
     def test_organization_create_shows_success_message(self):
@@ -458,7 +458,7 @@ class OrganizationDetailViewTests(TestCase):
     def test_organization_detail_requires_authentication(self):
         """Test that organization detail redirects unauthenticated users."""
         response = self.client.get(
-            reverse("accounts:organization_detail", args=[self.org1.id])
+            reverse("accounts:organization_detail", args=[self.org1.uid])
         )
         self.assertEqual(response.status_code, 302)
 
@@ -466,7 +466,7 @@ class OrganizationDetailViewTests(TestCase):
         """Test that users cannot view organizations they don't belong to."""
         self.client.login(username="user1", password="testpass123")
         response = self.client.get(
-            reverse("accounts:organization_detail", args=[self.org2.id])
+            reverse("accounts:organization_detail", args=[self.org2.uid])
         )
         self.assertEqual(response.status_code, 302)  # Redirects with error
 
@@ -474,7 +474,7 @@ class OrganizationDetailViewTests(TestCase):
         """Test that detail view shows organization information."""
         self.client.login(username="user1", password="testpass123")
         response = self.client.get(
-            reverse("accounts:organization_detail", args=[self.org1.id])
+            reverse("accounts:organization_detail", args=[self.org1.uid])
         )
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "accounts/organization_detail.html")
@@ -487,7 +487,7 @@ class OrganizationDetailViewTests(TestCase):
         project2 = Project.objects.create(name="Project 2", organization=self.org1)
 
         response = self.client.get(
-            reverse("accounts:organization_detail", args=[self.org1.id])
+            reverse("accounts:organization_detail", args=[self.org1.uid])
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Project 1")
@@ -497,7 +497,7 @@ class OrganizationDetailViewTests(TestCase):
         """Test that admin users see edit/delete actions."""
         self.client.login(username="user1", password="testpass123")
         response = self.client.get(
-            reverse("accounts:organization_detail", args=[self.org1.id])
+            reverse("accounts:organization_detail", args=[self.org1.uid])
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Edit")
@@ -507,7 +507,7 @@ class OrganizationDetailViewTests(TestCase):
         """Test that non-admin members don't see edit/delete actions."""
         self.client.login(username="user2", password="testpass123")
         response = self.client.get(
-            reverse("accounts:organization_detail", args=[self.org2.id])
+            reverse("accounts:organization_detail", args=[self.org2.uid])
         )
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Edit")
@@ -534,7 +534,7 @@ class OrganizationEditViewTests(TestCase):
     def test_organization_edit_requires_authentication(self):
         """Test that organization edit redirects unauthenticated users."""
         response = self.client.get(
-            reverse("accounts:organization_edit", args=[self.org1.id])
+            reverse("accounts:organization_edit", args=[self.org1.uid])
         )
         self.assertEqual(response.status_code, 302)
 
@@ -542,7 +542,7 @@ class OrganizationEditViewTests(TestCase):
         """Test that only admins can edit organizations."""
         self.client.login(username="user2", password="testpass123")
         response = self.client.get(
-            reverse("accounts:organization_edit", args=[self.org2.id])
+            reverse("accounts:organization_edit", args=[self.org2.uid])
         )
         self.assertEqual(response.status_code, 302)  # Redirects with error
 
@@ -550,7 +550,7 @@ class OrganizationEditViewTests(TestCase):
         """Test that users cannot edit organizations they don't belong to."""
         self.client.login(username="user1", password="testpass123")
         response = self.client.post(
-            reverse("accounts:organization_edit", args=[self.org2.id]),
+            reverse("accounts:organization_edit", args=[self.org2.uid]),
             {"name": "Hacked Org"},
         )
         self.assertEqual(response.status_code, 302)  # Redirects with error
@@ -561,7 +561,7 @@ class OrganizationEditViewTests(TestCase):
         """Test that GET request shows edit form."""
         self.client.login(username="user1", password="testpass123")
         response = self.client.get(
-            reverse("accounts:organization_edit", args=[self.org1.id])
+            reverse("accounts:organization_edit", args=[self.org1.uid])
         )
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "accounts/organization_edit.html")
@@ -571,7 +571,7 @@ class OrganizationEditViewTests(TestCase):
         """Test that organization edit updates the organization name."""
         self.client.login(username="user1", password="testpass123")
         response = self.client.post(
-            reverse("accounts:organization_edit", args=[self.org1.id]),
+            reverse("accounts:organization_edit", args=[self.org1.uid]),
             {"name": "Updated Org 1"},
         )
         self.assertEqual(response.status_code, 302)
@@ -582,7 +582,7 @@ class OrganizationEditViewTests(TestCase):
         """Test that successful edit redirects to organization detail."""
         self.client.login(username="user1", password="testpass123")
         response = self.client.post(
-            reverse("accounts:organization_edit", args=[self.org1.id]),
+            reverse("accounts:organization_edit", args=[self.org1.uid]),
             {"name": "Updated Org 1"},
         )
         self.assertRedirects(
@@ -593,7 +593,7 @@ class OrganizationEditViewTests(TestCase):
         """Test that success message is displayed after edit."""
         self.client.login(username="user1", password="testpass123")
         response = self.client.post(
-            reverse("accounts:organization_edit", args=[self.org1.id]),
+            reverse("accounts:organization_edit", args=[self.org1.uid]),
             {"name": "Updated Org 1"},
             follow=True,
         )
@@ -605,7 +605,7 @@ class OrganizationEditViewTests(TestCase):
         """Test that empty name shows error message."""
         self.client.login(username="user1", password="testpass123")
         response = self.client.post(
-            reverse("accounts:organization_edit", args=[self.org1.id]), {"name": ""}
+            reverse("accounts:organization_edit", args=[self.org1.uid]), {"name": ""}
         )
         self.assertEqual(response.status_code, 200)
         self.org1.refresh_from_db()
@@ -635,7 +635,7 @@ class OrganizationDeleteViewTests(TestCase):
     def test_organization_delete_requires_authentication(self):
         """Test that organization delete redirects unauthenticated users."""
         response = self.client.post(
-            reverse("accounts:organization_delete", args=[self.org1.id])
+            reverse("accounts:organization_delete", args=[self.org1.uid])
         )
         self.assertEqual(response.status_code, 302)
 
@@ -643,7 +643,7 @@ class OrganizationDeleteViewTests(TestCase):
         """Test that organization delete requires POST method."""
         self.client.login(username="user1", password="testpass123")
         response = self.client.get(
-            reverse("accounts:organization_delete", args=[self.org1.id])
+            reverse("accounts:organization_delete", args=[self.org1.uid])
         )
         self.assertEqual(response.status_code, 405)  # Method not allowed
 
@@ -651,7 +651,7 @@ class OrganizationDeleteViewTests(TestCase):
         """Test that only admins can delete organizations."""
         self.client.login(username="user2", password="testpass123")
         response = self.client.post(
-            reverse("accounts:organization_delete", args=[self.org2.id])
+            reverse("accounts:organization_delete", args=[self.org2.uid])
         )
         self.assertEqual(response.status_code, 302)  # Redirects with error
         self.assertTrue(Organization.objects.filter(id=self.org2.id).exists())
@@ -661,7 +661,7 @@ class OrganizationDeleteViewTests(TestCase):
         self.client.login(username="user1", password="testpass123")
         org_id = self.org2.id
         response = self.client.post(
-            reverse("accounts:organization_delete", args=[org_id])
+            reverse("accounts:organization_delete", args=[self.org2.uid])
         )
         self.assertEqual(response.status_code, 302)  # Redirects with error
         self.assertTrue(Organization.objects.filter(id=org_id).exists())
@@ -671,7 +671,7 @@ class OrganizationDeleteViewTests(TestCase):
         self.client.login(username="user1", password="testpass123")
         org_id = self.org1.id
         response = self.client.post(
-            reverse("accounts:organization_delete", args=[org_id])
+            reverse("accounts:organization_delete", args=[self.org1.uid])
         )
         self.assertEqual(response.status_code, 302)
         self.assertFalse(Organization.objects.filter(id=org_id).exists())
@@ -680,7 +680,7 @@ class OrganizationDeleteViewTests(TestCase):
         """Test that successful delete redirects to organization list."""
         self.client.login(username="user1", password="testpass123")
         response = self.client.post(
-            reverse("accounts:organization_delete", args=[self.org1.id])
+            reverse("accounts:organization_delete", args=[self.org1.uid])
         )
         self.assertRedirects(response, reverse("accounts:organization_list"))
 
@@ -688,7 +688,7 @@ class OrganizationDeleteViewTests(TestCase):
         """Test that success message is displayed after delete."""
         self.client.login(username="user1", password="testpass123")
         response = self.client.post(
-            reverse("accounts:organization_delete", args=[self.org1.id]), follow=True
+            reverse("accounts:organization_delete", args=[self.org1.uid]), follow=True
         )
         messages = list(get_messages(response.wsgi_request))
         self.assertEqual(len(messages), 1)
@@ -701,7 +701,7 @@ class OrganizationDeleteViewTests(TestCase):
 
         org_id = self.org1.id
         response = self.client.post(
-            reverse("accounts:organization_delete", args=[org_id])
+            reverse("accounts:organization_delete", args=[self.org1.uid])
         )
         self.assertEqual(response.status_code, 302)  # Redirects with error
         self.assertTrue(Organization.objects.filter(id=org_id).exists())
@@ -712,7 +712,7 @@ class OrganizationDeleteViewTests(TestCase):
         Project.objects.create(name="Project 1", organization=self.org1)
 
         response = self.client.post(
-            reverse("accounts:organization_delete", args=[self.org1.id]), follow=True
+            reverse("accounts:organization_delete", args=[self.org1.uid]), follow=True
         )
         messages = list(get_messages(response.wsgi_request))
         self.assertEqual(len(messages), 1)

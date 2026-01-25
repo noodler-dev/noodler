@@ -76,25 +76,25 @@ class ProjectViewsTestCase(TestCase):
 
     def test_project_detail_requires_authentication(self):
         """Test that project detail redirects unauthenticated users."""
-        response = self.client.get(reverse("projects:detail", args=[self.project1.id]))
+        response = self.client.get(reverse("projects:detail", args=[self.project1.uid]))
         self.assertEqual(response.status_code, 302)
 
     def test_project_detail_access_control(self):
         """Test that users cannot view projects outside their organizations."""
         self.client.login(username="user1", password="testpass123")
-        response = self.client.get(reverse("projects:detail", args=[self.project2.id]))
+        response = self.client.get(reverse("projects:detail", args=[self.project2.uid]))
         self.assertEqual(response.status_code, 302)  # Redirects with error message
 
     def test_project_edit_requires_authentication(self):
         """Test that project edit redirects unauthenticated users."""
-        response = self.client.get(reverse("projects:edit", args=[self.project1.id]))
+        response = self.client.get(reverse("projects:edit", args=[self.project1.uid]))
         self.assertEqual(response.status_code, 302)
 
     def test_project_edit_access_control(self):
         """Test that users cannot edit projects outside their organizations."""
         self.client.login(username="user1", password="testpass123")
         response = self.client.post(
-            reverse("projects:edit", args=[self.project2.id]),
+            reverse("projects:edit", args=[self.project2.uid]),
             {"name": "Hacked Project"},
         )
         self.assertEqual(response.status_code, 302)  # Redirects with error
@@ -105,7 +105,7 @@ class ProjectViewsTestCase(TestCase):
         """Test that project edit updates the project name."""
         self.client.login(username="user1", password="testpass123")
         response = self.client.post(
-            reverse("projects:edit", args=[self.project1.id]),
+            reverse("projects:edit", args=[self.project1.uid]),
             {"name": "Updated Project 1"},
         )
         self.assertEqual(response.status_code, 302)
@@ -115,19 +115,19 @@ class ProjectViewsTestCase(TestCase):
     def test_project_delete_requires_post(self):
         """Test that project delete requires POST method."""
         self.client.login(username="user1", password="testpass123")
-        response = self.client.get(reverse("projects:delete", args=[self.project1.id]))
+        response = self.client.get(reverse("projects:delete", args=[self.project1.uid]))
         self.assertEqual(response.status_code, 405)  # Method not allowed
 
     def test_project_delete_requires_authentication(self):
         """Test that project delete redirects unauthenticated users."""
-        response = self.client.post(reverse("projects:delete", args=[self.project1.id]))
+        response = self.client.post(reverse("projects:delete", args=[self.project1.uid]))
         self.assertEqual(response.status_code, 302)
 
     def test_project_delete_access_control(self):
         """Test that users cannot delete projects outside their organizations."""
         self.client.login(username="user1", password="testpass123")
         project_id = self.project2.id
-        response = self.client.post(reverse("projects:delete", args=[project_id]))
+        response = self.client.post(reverse("projects:delete", args=[self.project2.uid]))
         self.assertEqual(response.status_code, 302)  # Redirects with error
         self.assertTrue(Project.objects.filter(id=project_id).exists())
 
@@ -135,7 +135,7 @@ class ProjectViewsTestCase(TestCase):
         """Test that project delete removes the project."""
         self.client.login(username="user1", password="testpass123")
         project_id = self.project1.id
-        response = self.client.post(reverse("projects:delete", args=[project_id]))
+        response = self.client.post(reverse("projects:delete", args=[self.project1.uid]))
         self.assertEqual(response.status_code, 302)
         self.assertFalse(Project.objects.filter(id=project_id).exists())
 
@@ -146,7 +146,7 @@ class ProjectViewsTestCase(TestCase):
         session["current_project_id"] = self.project1.id
         session.save()
 
-        response = self.client.post(reverse("projects:delete", args=[self.project1.id]))
+        response = self.client.post(reverse("projects:delete", args=[self.project1.uid]))
         self.assertEqual(response.status_code, 302)
         session = self.client.session
         self.assertNotIn("current_project_id", session)
@@ -164,7 +164,7 @@ class ProjectViewsTestCase(TestCase):
         session.save()
 
         # Delete project3 (different from current project)
-        response = self.client.post(reverse("projects:delete", args=[project3.id]))
+        response = self.client.post(reverse("projects:delete", args=[project3.uid]))
         self.assertEqual(response.status_code, 302)
 
         # Current project should still be project1 (not cleared)
@@ -177,18 +177,18 @@ class ProjectViewsTestCase(TestCase):
     def test_project_switch_requires_post(self):
         """Test that project switch requires POST method."""
         self.client.login(username="user1", password="testpass123")
-        response = self.client.get(reverse("projects:switch", args=[self.project1.id]))
+        response = self.client.get(reverse("projects:switch", args=[self.project1.uid]))
         self.assertEqual(response.status_code, 405)
 
     def test_project_switch_requires_authentication(self):
         """Test that project switch redirects unauthenticated users."""
-        response = self.client.post(reverse("projects:switch", args=[self.project1.id]))
+        response = self.client.post(reverse("projects:switch", args=[self.project1.uid]))
         self.assertEqual(response.status_code, 302)
 
     def test_project_switch_access_control(self):
         """Test that users cannot switch to projects outside their organizations."""
         self.client.login(username="user1", password="testpass123")
-        response = self.client.post(reverse("projects:switch", args=[self.project2.id]))
+        response = self.client.post(reverse("projects:switch", args=[self.project2.uid]))
         self.assertEqual(response.status_code, 302)  # Redirects with error
         session = self.client.session
         self.assertNotIn("current_project_id", session)
@@ -196,7 +196,7 @@ class ProjectViewsTestCase(TestCase):
     def test_project_switch_sets_session(self):
         """Test that project switch sets current_project_id in session."""
         self.client.login(username="user1", password="testpass123")
-        response = self.client.post(reverse("projects:switch", args=[self.project1.id]))
+        response = self.client.post(reverse("projects:switch", args=[self.project1.uid]))
         self.assertEqual(response.status_code, 302)
         session = self.client.session
         self.assertEqual(session.get("current_project_id"), self.project1.id)
@@ -214,7 +214,7 @@ class ProjectViewsTestCase(TestCase):
         project3 = Project.objects.create(name="Project 3", organization=self.org1)
 
         # Visit project3 detail page
-        response = self.client.get(reverse("projects:detail", args=[project3.id]))
+        response = self.client.get(reverse("projects:detail", args=[project3.uid]))
         self.assertEqual(response.status_code, 200)
 
         # Current project should be updated to project3
@@ -232,7 +232,7 @@ class ProjectViewsTestCase(TestCase):
         session.save()
 
         # Visit project detail page
-        response = self.client.get(reverse("projects:detail", args=[self.project1.id]))
+        response = self.client.get(reverse("projects:detail", args=[self.project1.uid]))
         self.assertEqual(response.status_code, 200)
 
         # Current project should be auto-selected
@@ -249,7 +249,7 @@ class ProjectViewsTestCase(TestCase):
         session.save()
 
         # Visit a valid project detail page
-        response = self.client.get(reverse("projects:detail", args=[self.project1.id]))
+        response = self.client.get(reverse("projects:detail", args=[self.project1.uid]))
         self.assertEqual(response.status_code, 200)
 
         # Invalid project should be cleared and replaced with valid one
@@ -277,7 +277,7 @@ class ApiKeyViewsTestCase(TestCase):
     def test_api_key_create_requires_authentication(self):
         """Test that API key create redirects unauthenticated users."""
         response = self.client.post(
-            reverse("projects:key_create", args=[self.project.id]), {"name": "Test Key"}
+            reverse("projects:key_create", args=[self.project.uid]), {"name": "Test Key"}
         )
         self.assertEqual(response.status_code, 302)
 
@@ -289,7 +289,7 @@ class ApiKeyViewsTestCase(TestCase):
 
         self.client.login(username="user1", password="testpass123")
         response = self.client.post(
-            reverse("projects:key_create", args=[project2.id]),
+            reverse("projects:key_create", args=[project2.uid]),
             {"name": "Unauthorized Key"},
         )
         self.assertEqual(response.status_code, 302)  # Redirects with error
@@ -299,7 +299,7 @@ class ApiKeyViewsTestCase(TestCase):
         """Test that API key create generates and stores hashed key."""
         self.client.login(username="user1", password="testpass123")
         response = self.client.post(
-            reverse("projects:key_create", args=[self.project.id]), {"name": "Test Key"}
+            reverse("projects:key_create", args=[self.project.uid]), {"name": "Test Key"}
         )
         self.assertEqual(response.status_code, 302)
 
@@ -311,7 +311,7 @@ class ApiKeyViewsTestCase(TestCase):
         """Test that raw key is stored in session for one-time display."""
         self.client.login(username="user1", password="testpass123")
         response = self.client.post(
-            reverse("projects:key_create", args=[self.project.id]), {"name": "Test Key"}
+            reverse("projects:key_create", args=[self.project.uid]), {"name": "Test Key"}
         )
         self.assertEqual(response.status_code, 302)
 
@@ -325,13 +325,13 @@ class ApiKeyViewsTestCase(TestCase):
 
         # Create key
         response = self.client.post(
-            reverse("projects:key_create", args=[self.project.id]), {"name": "Test Key"}
+            reverse("projects:key_create", args=[self.project.uid]), {"name": "Test Key"}
         )
         api_key = ApiKey.objects.get(name="Test Key", project=self.project)
 
         # First view - should show key
         response = self.client.get(
-            reverse("projects:key_created", args=[self.project.id, api_key.id])
+            reverse("projects:key_created", args=[self.project.uid, api_key.uid])
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "API Key Created")
@@ -342,7 +342,7 @@ class ApiKeyViewsTestCase(TestCase):
 
         # Second view - should redirect
         response = self.client.get(
-            reverse("projects:key_created", args=[self.project.id, api_key.id])
+            reverse("projects:key_created", args=[self.project.uid, api_key.uid])
         )
         self.assertEqual(response.status_code, 302)
 
@@ -352,7 +352,7 @@ class ApiKeyViewsTestCase(TestCase):
             name="Test Key", project=self.project, hashed_key="test"
         )
         response = self.client.get(
-            reverse("projects:key_created", args=[self.project.id, api_key.id])
+            reverse("projects:key_created", args=[self.project.uid, api_key.uid])
         )
         self.assertEqual(response.status_code, 302)
 
@@ -363,7 +363,7 @@ class ApiKeyViewsTestCase(TestCase):
             name="Test Key", project=self.project, hashed_key="test"
         )
         response = self.client.get(
-            reverse("projects:key_revoke", args=[self.project.id, api_key.id])
+            reverse("projects:key_revoke", args=[self.project.uid, api_key.uid])
         )
         self.assertEqual(response.status_code, 405)
 
@@ -373,7 +373,7 @@ class ApiKeyViewsTestCase(TestCase):
             name="Test Key", project=self.project, hashed_key="test"
         )
         response = self.client.post(
-            reverse("projects:key_revoke", args=[self.project.id, api_key.id])
+            reverse("projects:key_revoke", args=[self.project.uid, api_key.uid])
         )
         self.assertEqual(response.status_code, 302)
 
@@ -386,7 +386,7 @@ class ApiKeyViewsTestCase(TestCase):
         self.assertIsNone(api_key.revoked_at)
 
         response = self.client.post(
-            reverse("projects:key_revoke", args=[self.project.id, api_key.id])
+            reverse("projects:key_revoke", args=[self.project.uid, api_key.uid])
         )
         self.assertEqual(response.status_code, 302)
 
@@ -402,7 +402,7 @@ class ApiKeyViewsTestCase(TestCase):
         key_id = api_key.id
 
         response = self.client.post(
-            reverse("projects:key_revoke", args=[self.project.id, api_key.id])
+            reverse("projects:key_revoke", args=[self.project.uid, api_key.uid])
         )
         self.assertEqual(response.status_code, 302)
 
@@ -419,7 +419,7 @@ class ApiKeyViewsTestCase(TestCase):
 
         self.client.login(username="user1", password="testpass123")
         response = self.client.post(
-            reverse("projects:key_revoke", args=[project2.id, api_key.id])
+            reverse("projects:key_revoke", args=[project2.uid, api_key.uid])
         )
         self.assertEqual(response.status_code, 302)  # Redirects with error
 

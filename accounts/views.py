@@ -104,14 +104,14 @@ def organization_create(request):
         messages.success(
             request, f'Organization "{organization.name}" created successfully.'
         )
-        return redirect("accounts:organization_detail", org_id=organization.id)
+        return redirect("accounts:organization_detail", org_uid=organization.uid)
 
     return render(request, "accounts/organization_new.html")
 
 
 @login_required
-@require_organization_access(org_id_param="org_id")
-def organization_detail(request, org_id):
+@require_organization_access(org_id_param="org_uid")
+def organization_detail(request, org_uid):
     """View organization details and list projects."""
     organization = request.current_organization
     is_admin = is_organization_admin(request.user, organization)
@@ -130,9 +130,9 @@ def organization_detail(request, org_id):
 
 
 @login_required
-@require_organization_access(org_id_param="org_id", require_admin=True)
+@require_organization_access(org_id_param="org_uid", require_admin=True)
 @require_http_methods(["GET", "POST"])
-def organization_edit(request, org_id):
+def organization_edit(request, org_uid):
     """Edit an organization (admin only)."""
     organization = request.current_organization
 
@@ -153,7 +153,7 @@ def organization_edit(request, org_id):
             request,
             f'Organization "{organization.name}" updated successfully.',
         )
-        return redirect("accounts:organization_detail", org_id=organization.id)
+        return redirect("accounts:organization_detail", org_uid=organization.uid)
 
     context = {
         "organization": organization,
@@ -162,9 +162,9 @@ def organization_edit(request, org_id):
 
 
 @login_required
-@require_organization_access(org_id_param="org_id", require_admin=True)
+@require_organization_access(org_id_param="org_uid", require_admin=True)
 @require_POST
-def organization_delete(request, org_id):
+def organization_delete(request, org_uid):
     """Delete an organization (admin only)."""
     organization = request.current_organization
     organization_name = organization.name
@@ -181,11 +181,11 @@ def organization_delete(request, org_id):
         )
         project_count = Project.objects.filter(organization=locked_org).count()
         if project_count > 0:
-            messages.error(
-                request,
-                f'Cannot delete organization "{organization_name}" because it has {project_count} project(s). Please delete or move the projects first.',
-            )
-            return redirect("accounts:organization_detail", org_id=organization.id)
+                messages.error(
+                    request,
+                    f'Cannot delete organization "{organization_name}" because it has {project_count} project(s). Please delete or move the projects first.',
+                )
+                return redirect("accounts:organization_detail", org_uid=organization.uid)
 
         # Delete within the same transaction
         locked_org.delete()

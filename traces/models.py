@@ -1,3 +1,4 @@
+import uuid
 from django.db import models, transaction
 from django.db.models import JSONField, BinaryField
 from google.protobuf.json_format import MessageToDict
@@ -162,6 +163,7 @@ class RawTrace(models.Model):
 
 
 class Trace(models.Model):
+    uid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     trace_id = models.CharField(max_length=32)
     started_at = models.DateTimeField()
@@ -174,6 +176,7 @@ class Trace(models.Model):
 
 
 class Span(models.Model):
+    uid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
     name = models.CharField(max_length=50)
     trace = models.ForeignKey(Trace, on_delete=models.CASCADE)
     span_id = models.CharField(max_length=16)

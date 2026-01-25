@@ -11,17 +11,17 @@ urlpatterns = [
     path("organizations/", views.organization_list, name="organization_list"),
     path("organizations/new/", views.organization_create, name="organization_create"),
     path(
-        "organizations/<int:org_id>/",
+        "organizations/<uuid:org_uid>/",
         views.organization_detail,
         name="organization_detail",
     ),
     path(
-        "organizations/<int:org_id>/edit/",
+        "organizations/<uuid:org_uid>/edit/",
         views.organization_edit,
         name="organization_edit",
     ),
     path(
-        "organizations/<int:org_id>/delete/",
+        "organizations/<uuid:org_uid>/delete/",
         views.organization_delete,
         name="organization_delete",
     ),

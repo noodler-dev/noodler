@@ -53,9 +53,9 @@ def trace_list(request):
 
 @login_required
 @require_project_access(require_current_project=True)
-def trace_detail(request, trace_id):
+def trace_detail(request, trace_uid):
     """View trace details and all associated spans."""
-    trace = get_object_or_404(Trace, id=trace_id)
+    trace = get_object_or_404(Trace, uid=trace_uid)
 
     # Check access - user must have access to the trace's project
     if trace.project not in request.user_projects:

@@ -22,7 +22,7 @@
                         {% for project in user_projects %}
                             {% if project.id != current_project.id %}
                                 <li>
-                                    <form method="post" action="{% url 'projects:switch' project.id %}" class="d-inline">
+                                    <form method="post" action="{% url 'projects:switch' project.uid %}" class="d-inline">
                                         {% csrf_token %}
                                         <input type="hidden" name="next" value="{% url 'traces:list' %}">
                                         <button type="submit" class="dropdown-item">{{ project.name }}</button>
@@ -73,7 +73,7 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <a href="{% url 'traces:detail' item.trace.id %}" class="btn btn-sm btn-primary">View</a>
+                                <a href="{% url 'traces:detail' item.trace.uid %}" class="btn btn-sm btn-primary">View</a>
                             </td>
                         </tr>
                     {% endfor %}
