@@ -16,8 +16,10 @@ def project_list(request):
     """List all projects the user has access to, organized by organization."""
     from collections import OrderedDict
 
-    projects = get_user_projects(request.user).select_related("organization").order_by(
-        "organization__name", "name"
+    projects = (
+        get_user_projects(request.user)
+        .select_related("organization")
+        .order_by("organization__name", "name")
     )
     current_project_id = request.session.get("current_project_id")
 
