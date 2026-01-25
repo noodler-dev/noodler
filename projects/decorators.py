@@ -12,7 +12,7 @@ from .models import Project
 
 def require_project_access(
     require_current_project=False,
-    project_id_param="project_id",
+    project_id_param="project_uid",
     check_both=False,
     auto_select=True,
     auto_update=True,
@@ -22,8 +22,8 @@ def require_project_access(
 
     Args:
         require_current_project: If True, requires current_project_id in session
-        project_id_param: Name of URL parameter containing project ID (default: 'project_id')
-        check_both: If True, validates both URL project_id and session current_project match
+        project_id_param: Name of URL parameter containing project UID (default: 'project_uid')
+        check_both: If True, validates both URL project_uid and session current_project match
         auto_select: If True, automatically select first project if none is set (default: True)
         auto_update: If True, automatically update current project when visiting project links (default: True)
 
@@ -35,8 +35,8 @@ def require_project_access(
             ...
 
         @login_required
-        @require_project_access(project_id_param='project_id')
-        def project_detail(request, project_id):
+        @require_project_access(project_id_param='project_uid')
+        def project_detail(request, project_uid):
             # request.current_project is already set and validated
             ...
     """
@@ -46,13 +46,13 @@ def require_project_access(
         def wrapper(request, *args, **kwargs):
             user_projects = get_user_projects(request.user)
             project = None
-            project_id = None
+            project_uid = None
 
-            # Get project_id from URL parameters if specified
+            # Get project_uid from URL parameters if specified
             if project_id_param in kwargs:
-                project_id = kwargs[project_id_param]
+                project_uid = kwargs[project_id_param]
                 try:
-                    project = user_projects.get(id=project_id)
+                    project = user_projects.get(uid=project_uid)
                 except Project.DoesNotExist:
                     messages.error(request, "You do not have access to this project.")
                     return redirect("projects:list")
@@ -62,10 +62,10 @@ def require_project_access(
 
             # Auto-update: If we have a project from URL and auto_update is enabled,
             # update the current project in session
-            if auto_update and project_id and project:
+            if auto_update and project_uid and project:
                 current_project = get_current_project(request.user, request.session)
-                if not current_project or current_project.id != project_id:
-                    set_current_project(request.session, project_id)
+                if not current_project or current_project.uid != project_uid:
+                    set_current_project(request.session, project.id)
 
             # Handle session-based current_project requirement
             if require_current_project:
@@ -95,9 +95,9 @@ def require_project_access(
                         return redirect("projects:list")
                 else:
                     # Current project exists and is valid
-                    # If check_both is True, ensure URL project_id matches session project_id
+                    # If check_both is True, ensure URL project_uid matches session current_project
                     if check_both:
-                        if project_id and project_id != current_project.id:
+                        if project_uid and project_uid != current_project.uid:
                             messages.error(
                                 request,
                                 "The project in the URL does not match your current project.",
@@ -105,14 +105,14 @@ def require_project_access(
                             return redirect("projects:list")
                         project = current_project
                     else:
-                        # Use session project if no URL project_id was provided
+                        # Use session project if no URL project_uid was provided
                         if not project:
                             project = current_project
 
             # If check_both is True but require_current_project is False, validate both match
-            elif check_both and project_id:
+            elif check_both and project_uid:
                 current_project = get_current_project(request.user, request.session)
-                if current_project and project_id != current_project.id:
+                if current_project and project_uid != current_project.uid:
                     messages.error(
                         request,
                         "The project in the URL does not match your current project.",

@@ -1,3 +1,4 @@
+import uuid
 from django.db import models, transaction
 from django.db.models import JSONField, BinaryField
 from google.protobuf.json_format import MessageToDict
@@ -110,7 +111,7 @@ class RawTrace(models.Model):
 
         # Create or get Trace
         trace, created = Trace.objects.get_or_create(
-            trace_id=trace_id,
+            otel_trace_id=trace_id,
             project=self.project,
             defaults={
                 "started_at": started_at,
@@ -134,7 +135,7 @@ class RawTrace(models.Model):
         for span_data in spans_data:
             span = Span(
                 trace=trace,
-                span_id=span_data.get("span_id", ""),
+                otel_span_id=span_data.get("span_id", ""),
                 name=span_data.get("name", ""),
                 start_time=span_data.get("start_time") or started_at,
                 end_time=span_data.get("end_time"),
@@ -162,21 +163,27 @@ class RawTrace(models.Model):
 
 
 class Trace(models.Model):
+    uid = models.UUIDField(
+        default=uuid.uuid4, editable=False, unique=True, db_index=True
+    )
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    trace_id = models.CharField(max_length=32)
+    otel_trace_id = models.CharField(max_length=32)
     started_at = models.DateTimeField()
     ended_at = models.DateTimeField()
     service_name = models.CharField(max_length=50, null=True, blank=True)
     attributes = JSONField()
 
     def __str__(self):
-        return self.trace_id
+        return self.otel_trace_id
 
 
 class Span(models.Model):
+    uid = models.UUIDField(
+        default=uuid.uuid4, editable=False, unique=True, db_index=True
+    )
     name = models.CharField(max_length=50)
     trace = models.ForeignKey(Trace, on_delete=models.CASCADE)
-    span_id = models.CharField(max_length=16)
+    otel_span_id = models.CharField(max_length=16)
     start_time = models.DateTimeField()
     end_time = models.DateTimeField(null=True, blank=True)
     provider_name = models.CharField(max_length=50, null=True, blank=True)

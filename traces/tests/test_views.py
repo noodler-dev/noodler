@@ -38,14 +38,14 @@ class TraceViewsTestCase(TestCase):
         # Create traces
         now = timezone.now()
         self.trace1 = Trace.objects.create(
-            trace_id="trace1",
+            otel_trace_id="trace1",
             project=self.project1,
             started_at=now,
             ended_at=now,
             attributes={},
         )
         self.trace2 = Trace.objects.create(
-            trace_id="trace2",
+            otel_trace_id="trace2",
             project=self.project2,
             started_at=now,
             ended_at=now,
@@ -56,14 +56,14 @@ class TraceViewsTestCase(TestCase):
         self.span1 = Span.objects.create(
             name="Span 1",
             trace=self.trace1,
-            span_id="span1",
+            otel_span_id="span1",
             start_time=now,
             end_time=now,
         )
         self.span2 = Span.objects.create(
             name="Span 2",
             trace=self.trace2,
-            span_id="span2",
+            otel_span_id="span2",
             start_time=now,
             end_time=now,
         )
@@ -115,14 +115,14 @@ class TraceViewsTestCase(TestCase):
 
     def test_trace_detail_requires_authentication(self):
         """Test that trace detail redirects unauthenticated users."""
-        response = self.client.get(reverse("traces:detail", args=[self.trace1.id]))
+        response = self.client.get(reverse("traces:detail", args=[self.trace1.uid]))
         self.assertEqual(response.status_code, 302)
         self.assertIn("/accounts/login/", response.url)
 
     def test_trace_detail_requires_current_project(self):
         """Test that trace detail auto-selects first project when none is set."""
         self.client.login(username="user1", password="testpass123")
-        response = self.client.get(reverse("traces:detail", args=[self.trace1.id]))
+        response = self.client.get(reverse("traces:detail", args=[self.trace1.uid]))
         # With auto-select, first project is automatically selected and view succeeds
         self.assertEqual(response.status_code, 200)
 
@@ -139,7 +139,7 @@ class TraceViewsTestCase(TestCase):
         session["current_project_id"] = self.project1.id
         session.save()
 
-        response = self.client.get(reverse("traces:detail", args=[self.trace2.id]))
+        response = self.client.get(reverse("traces:detail", args=[self.trace2.uid]))
         self.assertEqual(response.status_code, 302)  # Redirects with error message
         self.assertEqual(response.url, reverse("projects:list"))
 
@@ -152,7 +152,7 @@ class TraceViewsTestCase(TestCase):
         session["current_project_id"] = self.project1.id
         session.save()
 
-        response = self.client.get(reverse("traces:detail", args=[self.trace1.id]))
+        response = self.client.get(reverse("traces:detail", args=[self.trace1.uid]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "trace1")
         self.assertContains(response, "Project 1")
@@ -166,7 +166,7 @@ class TraceViewsTestCase(TestCase):
         session["current_project_id"] = self.project1.id
         session.save()
 
-        response = self.client.get(reverse("traces:detail", args=[self.trace1.id]))
+        response = self.client.get(reverse("traces:detail", args=[self.trace1.uid]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Span 1")
         self.assertContains(response, "span1")
@@ -178,7 +178,7 @@ class TraceViewsTestCase(TestCase):
         span3 = Span.objects.create(
             name="Span 3",
             trace=self.trace1,
-            span_id="span3",
+            otel_span_id="span3",
             start_time=now,
             end_time=now,
         )
@@ -190,7 +190,7 @@ class TraceViewsTestCase(TestCase):
         session["current_project_id"] = self.project1.id
         session.save()
 
-        response = self.client.get(reverse("traces:detail", args=[self.trace1.id]))
+        response = self.client.get(reverse("traces:detail", args=[self.trace1.uid]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Span 1")
         self.assertContains(response, "Span 3")
@@ -199,5 +199,9 @@ class TraceViewsTestCase(TestCase):
     def test_trace_detail_404_for_nonexistent_trace(self):
         """Test that trace detail returns 404 for nonexistent trace."""
         self.client.login(username="user1", password="testpass123")
-        response = self.client.get(reverse("traces:detail", args=[99999]))
+        # Use a UUID that doesn't exist
+        import uuid
+
+        fake_uid = uuid.uuid4()
+        response = self.client.get(reverse("traces:detail", args=[fake_uid]))
         self.assertEqual(response.status_code, 404)

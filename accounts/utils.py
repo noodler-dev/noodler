@@ -12,11 +12,11 @@ def get_user_organizations(user):
         return Organization.objects.none()
 
 
-def get_user_organization(user, org_id):
+def get_user_organization(user, org_uid):
     """Get a specific organization if user has access."""
     user_orgs = get_user_organizations(user)
     try:
-        return user_orgs.get(id=org_id)
+        return user_orgs.get(uid=org_uid)
     except Organization.DoesNotExist:
         return None
 
