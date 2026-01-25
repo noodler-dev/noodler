@@ -212,23 +212,6 @@
                         </dl>
                     </div>
                 </div>
-                <div class="card mb-3">
-                    <div class="card-header">
-                        <h5 class="mb-0">Summary</h5>
-                    </div>
-                    <div class="card-body">
-                        <dl class="row mb-0">
-                            <dt class="col-sm-6">Total Spans:</dt>
-                            <dd class="col-sm-6">
-                                {{ spans_with_duration|length }}
-                            </dd>
-                            <dt class="col-sm-6">Messages:</dt>
-                            <dd class="col-sm-6">
-                                {{ conversation_messages|length }}
-                            </dd>
-                        </dl>
-                    </div>
-                </div>
                 <!-- Spans -->
                 {% if spans_with_duration %}
                     <div class="card mb-3">
