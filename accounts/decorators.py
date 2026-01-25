@@ -2,7 +2,6 @@ from functools import wraps
 from django.contrib import messages
 from django.shortcuts import redirect
 from .utils import get_user_organizations, get_user_organization
-from .models import Organization
 
 
 def require_organization_access(

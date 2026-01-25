@@ -1,4 +1,3 @@
-from accounts.models import Organization
 from accounts.utils import get_user_organizations
 from .models import Project
 
