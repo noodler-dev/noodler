@@ -4,58 +4,7 @@ from django.contrib import messages
 from django.shortcuts import render, get_object_or_404, redirect
 from projects.decorators import require_project_access
 from .models import Trace, Span
-from .utils import format_duration
-
-
-def extract_conversation_messages(spans):
-    """
-    Extract conversation messages from spans.
-    Returns a list of message dictionaries with role, content, and metadata.
-    """
-    conversation = []
-    
-    for span in spans:
-        # Extract input messages (user and system messages)
-        if span.input_messages and isinstance(span.input_messages, list):
-            for msg in span.input_messages:
-                role = msg.get("role")
-                if role in ("user", "system"):
-                    parts = msg.get("parts", [])
-                    for part in parts:
-                        if isinstance(part, dict) and part.get("type") == "text":
-                            content = part.get("content", "")
-                            if content:
-                                conversation.append({
-                                    "role": role,
-                                    "content": content,
-                                    "span_id": span.id,
-                                    "span_name": span.name,
-                                    "timestamp": span.start_time,
-                                })
-        
-        # Extract output messages (assistant messages)
-        if span.output_messages and isinstance(span.output_messages, list):
-            for msg in span.output_messages:
-                if isinstance(msg, dict) and msg.get("role") == "assistant":
-                    parts = msg.get("parts", [])
-                    content_parts = []
-                    for part in parts:
-                        if isinstance(part, dict) and part.get("type") == "text":
-                            content = part.get("content", "")
-                            if content:
-                                content_parts.append(content)
-                    
-                    if content_parts:
-                        conversation.append({
-                            "role": "assistant",
-                            "content": "\n".join(content_parts),
-                            "finish_reason": msg.get("finish_reason"),
-                            "span_id": span.id,
-                            "span_name": span.name,
-                            "timestamp": span.end_time or span.start_time,
-                        })
-    
-    return conversation
+from .utils import format_duration, extract_conversation_messages
 
 
 @login_required
