@@ -135,7 +135,7 @@ class RawTrace(models.Model):
         for span_data in spans_data:
             span = Span(
                 trace=trace,
-                span_id=span_data.get("span_id", ""),
+                otel_span_id=span_data.get("span_id", ""),
                 name=span_data.get("name", ""),
                 start_time=span_data.get("start_time") or started_at,
                 end_time=span_data.get("end_time"),
@@ -183,7 +183,7 @@ class Span(models.Model):
     )
     name = models.CharField(max_length=50)
     trace = models.ForeignKey(Trace, on_delete=models.CASCADE)
-    span_id = models.CharField(max_length=16)
+    otel_span_id = models.CharField(max_length=16)
     start_time = models.DateTimeField()
     end_time = models.DateTimeField(null=True, blank=True)
     provider_name = models.CharField(max_length=50, null=True, blank=True)

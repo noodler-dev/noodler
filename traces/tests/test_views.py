@@ -56,14 +56,14 @@ class TraceViewsTestCase(TestCase):
         self.span1 = Span.objects.create(
             name="Span 1",
             trace=self.trace1,
-            span_id="span1",
+            otel_span_id="span1",
             start_time=now,
             end_time=now,
         )
         self.span2 = Span.objects.create(
             name="Span 2",
             trace=self.trace2,
-            span_id="span2",
+            otel_span_id="span2",
             start_time=now,
             end_time=now,
         )
@@ -178,7 +178,7 @@ class TraceViewsTestCase(TestCase):
         span3 = Span.objects.create(
             name="Span 3",
             trace=self.trace1,
-            span_id="span3",
+            otel_span_id="span3",
             start_time=now,
             end_time=now,
         )
