@@ -5,18 +5,18 @@ from django.db import migrations
 
 
 def populate_uid(apps, schema_editor):
-    Trace = apps.get_model('traces', 'Trace')
-    Span = apps.get_model('traces', 'Span')
-    
+    Trace = apps.get_model("traces", "Trace")
+    Span = apps.get_model("traces", "Span")
+
     for trace in Trace.objects.all():
         if not trace.uid:
             trace.uid = uuid.uuid4()
-            trace.save(update_fields=['uid'])
-    
+            trace.save(update_fields=["uid"])
+
     for span in Span.objects.all():
         if not span.uid:
             span.uid = uuid.uuid4()
-            span.save(update_fields=['uid'])
+            span.save(update_fields=["uid"])
 
 
 def reverse_populate_uid(apps, schema_editor):
@@ -25,12 +25,10 @@ def reverse_populate_uid(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('traces', '0011_span_uid_trace_uid'),
+        ("traces", "0011_span_uid_trace_uid"),
     ]
 
     operations = [
         migrations.RunPython(populate_uid, reverse_populate_uid),
     ]
-

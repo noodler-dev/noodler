@@ -176,16 +176,14 @@ def organization_delete(request, org_uid):
 
     with transaction.atomic():
         # Lock the organization row to prevent concurrent modifications
-        locked_org = Organization.objects.select_for_update().get(
-            id=organization.id
-        )
+        locked_org = Organization.objects.select_for_update().get(id=organization.id)
         project_count = Project.objects.filter(organization=locked_org).count()
         if project_count > 0:
-                messages.error(
-                    request,
-                    f'Cannot delete organization "{organization_name}" because it has {project_count} project(s). Please delete or move the projects first.',
-                )
-                return redirect("accounts:organization_detail", org_uid=organization.uid)
+            messages.error(
+                request,
+                f'Cannot delete organization "{organization_name}" because it has {project_count} project(s). Please delete or move the projects first.',
+            )
+            return redirect("accounts:organization_detail", org_uid=organization.uid)
 
         # Delete within the same transaction
         locked_org.delete()

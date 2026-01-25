@@ -5,7 +5,9 @@ from accounts.models import Organization
 
 
 class Project(models.Model):
-    uid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
+    uid = models.UUIDField(
+        default=uuid.uuid4, editable=False, unique=True, db_index=True
+    )
     name = models.CharField(max_length=255)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -15,7 +17,9 @@ class Project(models.Model):
 
 
 class ApiKey(models.Model):
-    uid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
+    uid = models.UUIDField(
+        default=uuid.uuid4, editable=False, unique=True, db_index=True
+    )
     name = models.CharField(max_length=255)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     hashed_key = models.CharField(max_length=255, unique=True, null=True, blank=True)

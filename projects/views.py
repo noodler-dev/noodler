@@ -119,7 +119,10 @@ def project_delete(request, project_uid):
     if original_current_project_id == request.current_project.id:
         # The deleted project was the original current project, clear it
         del request.session["current_project_id"]
-    elif original_current_project_id and original_current_project_id != request.current_project.id:
+    elif (
+        original_current_project_id
+        and original_current_project_id != request.current_project.id
+    ):
         # The deleted project was different from the original current project
         # Restore the original current project (auto-update changed it)
         request.session["current_project_id"] = original_current_project_id

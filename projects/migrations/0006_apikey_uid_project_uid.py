@@ -4,20 +4,23 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('projects', '0005_apikey_create_dummy_key'),
+        ("projects", "0005_apikey_create_dummy_key"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='apikey',
-            name='uid',
-            field=models.UUIDField(blank=True, db_index=True, editable=False, null=True, unique=True),
+            model_name="apikey",
+            name="uid",
+            field=models.UUIDField(
+                blank=True, db_index=True, editable=False, null=True, unique=True
+            ),
         ),
         migrations.AddField(
-            model_name='project',
-            name='uid',
-            field=models.UUIDField(blank=True, db_index=True, editable=False, null=True, unique=True),
+            model_name="project",
+            name="uid",
+            field=models.UUIDField(
+                blank=True, db_index=True, editable=False, null=True, unique=True
+            ),
         ),
     ]

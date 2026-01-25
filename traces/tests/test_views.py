@@ -201,6 +201,7 @@ class TraceViewsTestCase(TestCase):
         self.client.login(username="user1", password="testpass123")
         # Use a UUID that doesn't exist
         import uuid
+
         fake_uid = uuid.uuid4()
         response = self.client.get(reverse("traces:detail", args=[fake_uid]))
         self.assertEqual(response.status_code, 404)

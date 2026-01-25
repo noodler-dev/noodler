@@ -5,15 +5,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('accounts', '0005_populate_organization_uid'),
+        ("accounts", "0005_populate_organization_uid"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='organization',
-            name='uid',
-            field=models.UUIDField(db_index=True, default=uuid.uuid4, editable=False, unique=True),
+            model_name="organization",
+            name="uid",
+            field=models.UUIDField(
+                db_index=True, default=uuid.uuid4, editable=False, unique=True
+            ),
         ),
     ]

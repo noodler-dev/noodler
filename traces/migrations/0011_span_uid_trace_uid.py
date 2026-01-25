@@ -4,20 +4,23 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('traces', '0010_trace_service_name_alter_span_system_instructions'),
+        ("traces", "0010_trace_service_name_alter_span_system_instructions"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='span',
-            name='uid',
-            field=models.UUIDField(blank=True, db_index=True, editable=False, null=True, unique=True),
+            model_name="span",
+            name="uid",
+            field=models.UUIDField(
+                blank=True, db_index=True, editable=False, null=True, unique=True
+            ),
         ),
         migrations.AddField(
-            model_name='trace',
-            name='uid',
-            field=models.UUIDField(blank=True, db_index=True, editable=False, null=True, unique=True),
+            model_name="trace",
+            name="uid",
+            field=models.UUIDField(
+                blank=True, db_index=True, editable=False, null=True, unique=True
+            ),
         ),
     ]

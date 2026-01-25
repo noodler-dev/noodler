@@ -4,15 +4,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('accounts', '0003_alter_membership_role'),
+        ("accounts", "0003_alter_membership_role"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='organization',
-            name='uid',
-            field=models.UUIDField(blank=True, db_index=True, editable=False, null=True, unique=True),
+            model_name="organization",
+            name="uid",
+            field=models.UUIDField(
+                blank=True, db_index=True, editable=False, null=True, unique=True
+            ),
         ),
     ]

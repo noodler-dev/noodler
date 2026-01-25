@@ -5,18 +5,18 @@ from django.db import migrations
 
 
 def populate_uid(apps, schema_editor):
-    Project = apps.get_model('projects', 'Project')
-    ApiKey = apps.get_model('projects', 'ApiKey')
-    
+    Project = apps.get_model("projects", "Project")
+    ApiKey = apps.get_model("projects", "ApiKey")
+
     for project in Project.objects.all():
         if not project.uid:
             project.uid = uuid.uuid4()
-            project.save(update_fields=['uid'])
-    
+            project.save(update_fields=["uid"])
+
     for apikey in ApiKey.objects.all():
         if not apikey.uid:
             apikey.uid = uuid.uuid4()
-            apikey.save(update_fields=['uid'])
+            apikey.save(update_fields=["uid"])
 
 
 def reverse_populate_uid(apps, schema_editor):
@@ -25,12 +25,10 @@ def reverse_populate_uid(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('projects', '0006_apikey_uid_project_uid'),
+        ("projects", "0006_apikey_uid_project_uid"),
     ]
 
     operations = [
         migrations.RunPython(populate_uid, reverse_populate_uid),
     ]
-

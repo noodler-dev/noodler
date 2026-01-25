@@ -5,11 +5,11 @@ from django.db import migrations
 
 
 def populate_uid(apps, schema_editor):
-    Organization = apps.get_model('accounts', 'Organization')
+    Organization = apps.get_model("accounts", "Organization")
     for org in Organization.objects.all():
         if not org.uid:
             org.uid = uuid.uuid4()
-            org.save(update_fields=['uid'])
+            org.save(update_fields=["uid"])
 
 
 def reverse_populate_uid(apps, schema_editor):
@@ -18,12 +18,10 @@ def reverse_populate_uid(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('accounts', '0004_organization_uid'),
+        ("accounts", "0004_organization_uid"),
     ]
 
     operations = [
         migrations.RunPython(populate_uid, reverse_populate_uid),
     ]
-

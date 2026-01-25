@@ -5,20 +5,23 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('traces', '0012_populate_trace_span_uid'),
+        ("traces", "0012_populate_trace_span_uid"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='span',
-            name='uid',
-            field=models.UUIDField(db_index=True, default=uuid.uuid4, editable=False, unique=True),
+            model_name="span",
+            name="uid",
+            field=models.UUIDField(
+                db_index=True, default=uuid.uuid4, editable=False, unique=True
+            ),
         ),
         migrations.AlterField(
-            model_name='trace',
-            name='uid',
-            field=models.UUIDField(db_index=True, default=uuid.uuid4, editable=False, unique=True),
+            model_name="trace",
+            name="uid",
+            field=models.UUIDField(
+                db_index=True, default=uuid.uuid4, editable=False, unique=True
+            ),
         ),
     ]

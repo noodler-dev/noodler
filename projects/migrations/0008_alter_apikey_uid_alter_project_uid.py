@@ -5,20 +5,23 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('projects', '0007_populate_project_apikey_uid'),
+        ("projects", "0007_populate_project_apikey_uid"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='apikey',
-            name='uid',
-            field=models.UUIDField(db_index=True, default=uuid.uuid4, editable=False, unique=True),
+            model_name="apikey",
+            name="uid",
+            field=models.UUIDField(
+                db_index=True, default=uuid.uuid4, editable=False, unique=True
+            ),
         ),
         migrations.AlterField(
-            model_name='project',
-            name='uid',
-            field=models.UUIDField(db_index=True, default=uuid.uuid4, editable=False, unique=True),
+            model_name="project",
+            name="uid",
+            field=models.UUIDField(
+                db_index=True, default=uuid.uuid4, editable=False, unique=True
+            ),
         ),
     ]
