@@ -26,67 +26,21 @@
         {% endfor %}
     {% endif %}
 
-    <div class="row mb-4">
-        <div class="col-md-6">
+    <div class="row">
+        <!-- Main Content: Conversation & Spans -->
+        <div class="col-lg-8 col-md-12 mb-4">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Trace Information</h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Conversation & Spans</h5>
+                    <div class="btn-group" role="group" aria-label="View toggle">
+                        <input type="radio" class="btn-check" name="viewToggle" id="viewConversation" autocomplete="off" checked>
+                        <label class="btn btn-outline-primary" for="viewConversation">Conversation</label>
+                        
+                        <input type="radio" class="btn-check" name="viewToggle" id="viewRaw" autocomplete="off">
+                        <label class="btn btn-outline-primary" for="viewRaw">Raw Trace</label>
+                    </div>
                 </div>
                 <div class="card-body">
-                    <dl class="row mb-0">
-                        <dt class="col-sm-4">Trace ID:</dt>
-                        <dd class="col-sm-8"><code>{{ trace.otel_trace_id }}</code></dd>
-                        
-                        <dt class="col-sm-4">Project:</dt>
-                        <dd class="col-sm-8">{{ trace.project.name }}</dd>
-                        
-                        <dt class="col-sm-4">Started:</dt>
-                        <dd class="col-sm-8">{{ trace.started_at|date:"M d, Y H:i:s" }}</dd>
-                        
-                        <dt class="col-sm-4">Ended:</dt>
-                        <dd class="col-sm-8">{{ trace.ended_at|date:"M d, Y H:i:s" }}</dd>
-                        
-                        <dt class="col-sm-4">Duration:</dt>
-                        <dd class="col-sm-8">
-                            {% if trace_duration %}
-                                {{ trace_duration }}
-                            {% else %}
-                                <span class="text-muted">N/A</span>
-                            {% endif %}
-                        </dd>
-                    </dl>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Summary</h5>
-                </div>
-                <div class="card-body">
-                    <dl class="row mb-0">
-                        <dt class="col-sm-6">Total Spans:</dt>
-                        <dd class="col-sm-6">{{ spans_with_duration|length }}</dd>
-                        <dt class="col-sm-6">Messages:</dt>
-                        <dd class="col-sm-6">{{ conversation_messages|length }}</dd>
-                    </dl>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Conversation & Spans</h5>
-            <div class="btn-group" role="group" aria-label="View toggle">
-                <input type="radio" class="btn-check" name="viewToggle" id="viewConversation" autocomplete="off" checked>
-                <label class="btn btn-outline-primary" for="viewConversation">Conversation</label>
-                
-                <input type="radio" class="btn-check" name="viewToggle" id="viewRaw" autocomplete="off">
-                <label class="btn btn-outline-primary" for="viewRaw">Raw Trace</label>
-            </div>
-        </div>
-        <div class="card-body">
             <!-- Conversation View -->
             <div id="conversationView">
                 {% if conversation_messages %}
@@ -285,6 +239,54 @@
                 {% else %}
                     <p class="text-muted mb-0">No spans found for this trace.</p>
                 {% endif %}
+                </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Trace Information & Summary -->
+        <div class="col-lg-4 col-md-12">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Trace Information</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Trace ID:</dt>
+                        <dd class="col-sm-7"><code>{{ trace.otel_trace_id }}</code></dd>
+                        
+                        <dt class="col-sm-5">Project:</dt>
+                        <dd class="col-sm-7">{{ trace.project.name }}</dd>
+                        
+                        <dt class="col-sm-5">Started:</dt>
+                        <dd class="col-sm-7">{{ trace.started_at|date:"M d, Y H:i:s" }}</dd>
+                        
+                        <dt class="col-sm-5">Ended:</dt>
+                        <dd class="col-sm-7">{{ trace.ended_at|date:"M d, Y H:i:s" }}</dd>
+                        
+                        <dt class="col-sm-5">Duration:</dt>
+                        <dd class="col-sm-7">
+                            {% if trace_duration %}
+                                {{ trace_duration }}
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Summary</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-6">Total Spans:</dt>
+                        <dd class="col-sm-6">{{ spans_with_duration|length }}</dd>
+                        <dt class="col-sm-6">Messages:</dt>
+                        <dd class="col-sm-6">{{ conversation_messages|length }}</dd>
+                    </dl>
+                </div>
             </div>
         </div>
     </div>
