@@ -31,7 +31,7 @@ def extract_conversation_messages(spans):
     Returns a list of message dictionaries with role, content, and metadata.
     """
     conversation = []
-    
+
     for span in spans:
         # Extract input messages (user and system messages)
         if span.input_messages and isinstance(span.input_messages, list):
@@ -43,14 +43,16 @@ def extract_conversation_messages(spans):
                         if isinstance(part, dict) and part.get("type") == "text":
                             content = part.get("content", "")
                             if content:
-                                conversation.append({
-                                    "role": role,
-                                    "content": content,
-                                    "span_id": span.id,
-                                    "span_name": span.name,
-                                    "timestamp": span.start_time,
-                                })
-        
+                                conversation.append(
+                                    {
+                                        "role": role,
+                                        "content": content,
+                                        "span_id": span.id,
+                                        "span_name": span.name,
+                                        "timestamp": span.start_time,
+                                    }
+                                )
+
         # Extract output messages (assistant messages)
         if span.output_messages and isinstance(span.output_messages, list):
             for msg in span.output_messages:
@@ -62,17 +64,19 @@ def extract_conversation_messages(spans):
                             content = part.get("content", "")
                             if content:
                                 content_parts.append(content)
-                    
+
                     if content_parts:
-                        conversation.append({
-                            "role": "assistant",
-                            "content": "\n".join(content_parts),
-                            "finish_reason": msg.get("finish_reason"),
-                            "span_id": span.id,
-                            "span_name": span.name,
-                            "timestamp": span.end_time or span.start_time,
-                        })
-    
+                        conversation.append(
+                            {
+                                "role": "assistant",
+                                "content": "\n".join(content_parts),
+                                "finish_reason": msg.get("finish_reason"),
+                                "span_id": span.id,
+                                "span_name": span.name,
+                                "timestamp": span.end_time or span.start_time,
+                            }
+                        )
+
     return conversation
 
 
