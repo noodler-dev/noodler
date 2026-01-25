@@ -13,12 +13,24 @@ from .utils import get_user_organizations, get_user_projects
 
 @login_required
 def project_list(request):
-    """List all projects the user has access to."""
-    projects = get_user_projects(request.user)
+    """List all projects the user has access to, organized by organization."""
+    from collections import OrderedDict
+
+    projects = get_user_projects(request.user).select_related("organization").order_by(
+        "organization__name", "name"
+    )
     current_project_id = request.session.get("current_project_id")
 
+    # Group projects by organization
+    projects_by_org = OrderedDict()
+    for project in projects:
+        org = project.organization
+        if org not in projects_by_org:
+            projects_by_org[org] = []
+        projects_by_org[org].append(project)
+
     context = {
-        "projects": projects,
+        "projects_by_org": projects_by_org,
         "current_project_id": current_project_id,
     }
     return render(request, "projects/list.html", context)
