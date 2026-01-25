@@ -8,5 +8,8 @@ clean:
 	uv run ruff format .
 	uv run djlint . --reformat --quiet
 
-lint:
+lint-code:
 	uv run ruff check .
+	
+lint-templates:
+	uv run djlint . --lint
