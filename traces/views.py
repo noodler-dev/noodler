@@ -23,6 +23,56 @@ def format_duration(start, end):
         return f"{minutes}m {seconds}s"
 
 
+def extract_conversation_messages(spans):
+    """
+    Extract conversation messages from spans.
+    Returns a list of message dictionaries with role, content, and metadata.
+    """
+    conversation = []
+    
+    for span in spans:
+        # Extract input messages (user messages)
+        if span.input_messages and isinstance(span.input_messages, list):
+            for msg in span.input_messages:
+                if isinstance(msg, dict) and msg.get("role") == "user":
+                    parts = msg.get("parts", [])
+                    for part in parts:
+                        if isinstance(part, dict) and part.get("type") == "text":
+                            content = part.get("content", "")
+                            if content:
+                                conversation.append({
+                                    "role": "user",
+                                    "content": content,
+                                    "span_id": span.id,
+                                    "span_name": span.name,
+                                    "timestamp": span.start_time,
+                                })
+        
+        # Extract output messages (assistant messages)
+        if span.output_messages and isinstance(span.output_messages, list):
+            for msg in span.output_messages:
+                if isinstance(msg, dict) and msg.get("role") == "assistant":
+                    parts = msg.get("parts", [])
+                    content_parts = []
+                    for part in parts:
+                        if isinstance(part, dict) and part.get("type") == "text":
+                            content = part.get("content", "")
+                            if content:
+                                content_parts.append(content)
+                    
+                    if content_parts:
+                        conversation.append({
+                            "role": "assistant",
+                            "content": "\n".join(content_parts),
+                            "finish_reason": msg.get("finish_reason"),
+                            "span_id": span.id,
+                            "span_name": span.name,
+                            "timestamp": span.end_time or span.start_time,
+                        })
+    
+    return conversation
+
+
 @login_required
 @require_project_access(require_current_project=True)
 def trace_list(request):
@@ -65,6 +115,9 @@ def trace_detail(request, trace_uid):
     # Get all spans for this trace, ordered by start_time
     spans = Span.objects.filter(trace=trace).order_by("start_time")
 
+    # Extract conversation messages
+    conversation_messages = extract_conversation_messages(spans)
+
     # Calculate durations for trace and spans
     trace_duration = format_duration(trace.started_at, trace.ended_at)
     spans_with_duration = []
@@ -104,6 +157,7 @@ def trace_detail(request, trace_uid):
         "trace": trace,
         "trace_duration": trace_duration,
         "spans_with_duration": spans_with_duration,
+        "conversation_messages": conversation_messages,
         "current_project": request.current_project,
     }
     return render(request, "traces/detail.html", context)
