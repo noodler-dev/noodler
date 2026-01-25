@@ -96,6 +96,8 @@
                                 <div class="fw-bold mb-2">
                                     {% if msg.role == "user" %}
                                         User
+                                    {% elif msg.role == "system" %}
+                                        System
                                     {% else %}
                                         Assistant
                                     {% endif %}

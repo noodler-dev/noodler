@@ -15,17 +15,18 @@ def extract_conversation_messages(spans):
     conversation = []
     
     for span in spans:
-        # Extract input messages (user messages)
+        # Extract input messages (user and system messages)
         if span.input_messages and isinstance(span.input_messages, list):
             for msg in span.input_messages:
-                if isinstance(msg, dict) and msg.get("role") == "user":
+                role = msg.get("role")
+                if role in ("user", "system"):
                     parts = msg.get("parts", [])
                     for part in parts:
                         if isinstance(part, dict) and part.get("type") == "text":
                             content = part.get("content", "")
                             if content:
                                 conversation.append({
-                                    "role": "user",
+                                    "role": role,
                                     "content": content,
                                     "span_id": span.id,
                                     "span_name": span.name,
