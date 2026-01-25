@@ -144,8 +144,10 @@ class SignUpViewTests(TestCase):
 
         user = User.objects.get(username="testuser")
         user_profile = user.userprofile
-        organizations = Organization.objects.filter(membership__user_profile=user_profile)
-        
+        organizations = Organization.objects.filter(
+            membership__user_profile=user_profile
+        )
+
         self.assertEqual(organizations.count(), 1)
         default_org = organizations.first()
         self.assertEqual(default_org.name, "testuser")
@@ -168,7 +170,7 @@ class SignUpViewTests(TestCase):
         membership = Membership.objects.get(
             user_profile=user_profile, organization=default_org
         )
-        
+
         self.assertEqual(membership.role, "admin")
 
 
