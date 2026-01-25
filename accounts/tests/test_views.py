@@ -133,6 +133,44 @@ class SignUpViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "form")
 
+    def test_signup_creates_default_organization(self):
+        """Test that signup creates a default organization for the user"""
+        data = {
+            "username": "testuser",
+            "password1": "testpass123",
+            "password2": "testpass123",
+        }
+        response = self.client.post(self.signup_url, data)
+
+        user = User.objects.get(username="testuser")
+        user_profile = user.userprofile
+        organizations = Organization.objects.filter(membership__user_profile=user_profile)
+        
+        self.assertEqual(organizations.count(), 1)
+        default_org = organizations.first()
+        self.assertEqual(default_org.name, "testuser")
+        self.assertTrue(default_org.is_default)
+
+    def test_signup_default_organization_has_admin_membership(self):
+        """Test that user is an admin member of the default organization"""
+        data = {
+            "username": "testuser",
+            "password1": "testpass123",
+            "password2": "testpass123",
+        }
+        response = self.client.post(self.signup_url, data)
+
+        user = User.objects.get(username="testuser")
+        user_profile = user.userprofile
+        default_org = Organization.objects.get(
+            membership__user_profile=user_profile, is_default=True
+        )
+        membership = Membership.objects.get(
+            user_profile=user_profile, organization=default_org
+        )
+        
+        self.assertEqual(membership.role, "admin")
+
 
 class LoginViewTests(TestCase):
     def setUp(self):

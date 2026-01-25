@@ -22,7 +22,9 @@ def signup_view(request):
             with transaction.atomic():
                 user = form.save()
                 # Create UserProfile for the new user
-                UserProfile.objects.create(user=user)
+                user_profile = UserProfile.objects.create(user=user)
+                # Create default organization
+                user_profile.create_default_organization()
             messages.success(request, "Account created successfully! Please log in.")
             return redirect("accounts:login")
     else:
