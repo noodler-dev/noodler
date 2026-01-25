@@ -25,6 +25,9 @@ class SignUpViewTests(TestCase):
         user_count_before = User.objects.count()
         data = {
             "username": "testuser",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
             "password1": "testpass123",
             "password2": "testpass123",
         }
@@ -38,6 +41,9 @@ class SignUpViewTests(TestCase):
         """Test that valid form submission creates a UserProfile"""
         data = {
             "username": "testuser",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
             "password1": "testpass123",
             "password2": "testpass123",
         }
@@ -50,6 +56,9 @@ class SignUpViewTests(TestCase):
         """Test that successful signup redirects to login page"""
         data = {
             "username": "testuser",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
             "password1": "testpass123",
             "password2": "testpass123",
         }
@@ -62,6 +71,9 @@ class SignUpViewTests(TestCase):
         """Test that success message is displayed after signup"""
         data = {
             "username": "testuser",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
             "password1": "testpass123",
             "password2": "testpass123",
         }
@@ -78,6 +90,9 @@ class SignUpViewTests(TestCase):
         user_count_before = User.objects.count()
         data = {
             "username": "testuser",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
             "password1": "testpass123",
             "password2": "differentpass",
         }
@@ -91,6 +106,9 @@ class SignUpViewTests(TestCase):
         """Test that invalid form shows error messages"""
         data = {
             "username": "testuser",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
             "password1": "testpass123",
             "password2": "differentpass",
         }
@@ -104,6 +122,9 @@ class SignUpViewTests(TestCase):
         User.objects.create_user(username="existinguser", password="testpass123")
         data = {
             "username": "existinguser",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
             "password1": "testpass123",
             "password2": "testpass123",
         }
@@ -125,6 +146,9 @@ class SignUpViewTests(TestCase):
         """Test that weak password shows validation error"""
         data = {
             "username": "testuser",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
             "password1": "123",
             "password2": "123",
         }
@@ -137,6 +161,9 @@ class SignUpViewTests(TestCase):
         """Test that signup creates a default organization for the user"""
         data = {
             "username": "testuser",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
             "password1": "testpass123",
             "password2": "testpass123",
         }
@@ -157,6 +184,9 @@ class SignUpViewTests(TestCase):
         """Test that user is an admin member of the default organization"""
         data = {
             "username": "testuser",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
             "password1": "testpass123",
             "password2": "testpass123",
         }
@@ -172,6 +202,68 @@ class SignUpViewTests(TestCase):
         )
 
         self.assertEqual(membership.role, "admin")
+
+    def test_signup_requires_first_name(self):
+        """Test that first name is required"""
+        data = {
+            "username": "testuser",
+            "first_name": "",
+            "last_name": "User",
+            "email": "test@example.com",
+            "password1": "testpass123",
+            "password2": "testpass123",
+        }
+        response = self.client.post(self.signup_url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "form")
+        self.assertFalse(User.objects.filter(username="testuser").exists())
+
+    def test_signup_requires_last_name(self):
+        """Test that last name is required"""
+        data = {
+            "username": "testuser",
+            "first_name": "Test",
+            "last_name": "",
+            "email": "test@example.com",
+            "password1": "testpass123",
+            "password2": "testpass123",
+        }
+        response = self.client.post(self.signup_url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "form")
+        self.assertFalse(User.objects.filter(username="testuser").exists())
+
+    def test_signup_requires_email(self):
+        """Test that email is required"""
+        data = {
+            "username": "testuser",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "",
+            "password1": "testpass123",
+            "password2": "testpass123",
+        }
+        response = self.client.post(self.signup_url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "form")
+        self.assertFalse(User.objects.filter(username="testuser").exists())
+
+    def test_signup_saves_user_fields(self):
+        """Test that first name, last name, and email are saved to user"""
+        data = {
+            "username": "testuser",
+            "first_name": "John",
+            "last_name": "Doe",
+            "email": "john.doe@example.com",
+            "password1": "testpass123",
+            "password2": "testpass123",
+        }
+        response = self.client.post(self.signup_url, data)
+
+        user = User.objects.get(username="testuser")
+        self.assertEqual(user.first_name, "John")
+        self.assertEqual(user.last_name, "Doe")
+        self.assertEqual(user.email, "john.doe@example.com")
 
 
 class LoginViewTests(TestCase):

@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout, authenticate
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.conf import settings
@@ -10,6 +10,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from .models import UserProfile, Organization, Membership
 from .utils import get_user_organizations, is_organization_admin
 from .decorators import require_organization_access
+from .forms import CustomUserCreationForm
 
 
 def signup_view(request):
@@ -17,7 +18,7 @@ def signup_view(request):
         return redirect("/")
 
     if request.method == "POST":
-        form = UserCreationForm(request.POST)
+        form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             with transaction.atomic():
                 user = form.save()
@@ -28,7 +29,7 @@ def signup_view(request):
             messages.success(request, "Account created successfully! Please log in.")
             return redirect("accounts:login")
     else:
-        form = UserCreationForm()
+        form = CustomUserCreationForm()
 
     return render(request, "accounts/signup.html", {"form": form})
 
