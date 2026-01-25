@@ -110,18 +110,19 @@ def project_edit(request, project_uid):
 def project_delete(request, project_uid):
     """Delete a project (POST-only)."""
     project_name = request.current_project.name
+    deleted_project_id = request.current_project.id
     request.current_project.delete()
 
     # Clear current project if it was deleted (check original value before auto-update)
     # Use original_current_project_id which was set before the decorator auto-updated the session
     # This prevents clearing the session when deleting a different project than the current one
     original_current_project_id = getattr(request, "original_current_project_id", None)
-    if original_current_project_id == request.current_project.id:
+    if original_current_project_id == deleted_project_id:
         # The deleted project was the original current project, clear it
         del request.session["current_project_id"]
     elif (
         original_current_project_id
-        and original_current_project_id != request.current_project.id
+        and original_current_project_id != deleted_project_id
     ):
         # The deleted project was different from the original current project
         # Restore the original current project (auto-update changed it)

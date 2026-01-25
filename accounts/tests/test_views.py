@@ -586,7 +586,7 @@ class OrganizationEditViewTests(TestCase):
             {"name": "Updated Org 1"},
         )
         self.assertRedirects(
-            response, reverse("accounts:organization_detail", args=[self.org1.id])
+            response, reverse("accounts:organization_detail", args=[self.org1.uid])
         )
 
     def test_organization_edit_shows_success_message(self):
