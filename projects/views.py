@@ -74,7 +74,7 @@ def project_create(request):
 
 
 @login_required
-@require_project_access(project_id_param="project_uid")
+@require_project_access(project_id_param="project_uid", auto_update=False)
 def project_detail(request, project_uid):
     """View project details and manage API keys."""
     # Get active API keys (not revoked)
