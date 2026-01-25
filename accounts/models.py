@@ -1,5 +1,5 @@
 import uuid
-from django.db import models
+from django.db import models, transaction
 from django.contrib.auth.models import User
 
 
@@ -8,6 +8,10 @@ class Organization(models.Model):
         default=uuid.uuid4, editable=False, unique=True, db_index=True
     )
     name = models.CharField(max_length=255)
+    is_default = models.BooleanField(
+        default=False,
+        help_text="Indicates if this is the default organization automatically created for a user on signup. Default organizations cannot be deleted.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -20,6 +24,20 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.user.username
+
+    def create_default_organization(self):
+        """Create a default organization for this user with admin membership."""
+        with transaction.atomic():
+            organization = Organization.objects.create(
+                name=self.user.username,
+                is_default=True,
+            )
+            Membership.objects.create(
+                user_profile=self,
+                organization=organization,
+                role="admin",
+            )
+        return organization
 
 
 class Membership(models.Model):

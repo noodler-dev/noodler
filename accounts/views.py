@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout, authenticate
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.conf import settings
@@ -10,6 +10,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from .models import UserProfile, Organization, Membership
 from .utils import get_user_organizations, is_organization_admin
 from .decorators import require_organization_access
+from .forms import CustomUserCreationForm
 
 
 def signup_view(request):
@@ -17,16 +18,18 @@ def signup_view(request):
         return redirect("/")
 
     if request.method == "POST":
-        form = UserCreationForm(request.POST)
+        form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             with transaction.atomic():
                 user = form.save()
                 # Create UserProfile for the new user
-                UserProfile.objects.create(user=user)
+                user_profile = UserProfile.objects.create(user=user)
+                # Create default organization
+                user_profile.create_default_organization()
             messages.success(request, "Account created successfully! Please log in.")
             return redirect("accounts:login")
     else:
-        form = UserCreationForm()
+        form = CustomUserCreationForm()
 
     return render(request, "accounts/signup.html", {"form": form})
 
@@ -168,6 +171,14 @@ def organization_delete(request, org_uid):
     """Delete an organization (admin only)."""
     organization = request.current_organization
     organization_name = organization.name
+
+    # Prevent deletion of default organizations
+    if organization.is_default:
+        messages.error(
+            request,
+            f'Cannot delete organization "{organization_name}" because it is your default organization. Default organizations cannot be deleted.',
+        )
+        return redirect("accounts:organization_detail", org_uid=organization.uid)
 
     # Check if organization has projects within a transaction with row lock
     # to prevent race condition where a project could be created between

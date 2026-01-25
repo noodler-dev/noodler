@@ -25,6 +25,9 @@ class SignUpViewTests(TestCase):
         user_count_before = User.objects.count()
         data = {
             "username": "testuser",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
             "password1": "testpass123",
             "password2": "testpass123",
         }
@@ -38,6 +41,9 @@ class SignUpViewTests(TestCase):
         """Test that valid form submission creates a UserProfile"""
         data = {
             "username": "testuser",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
             "password1": "testpass123",
             "password2": "testpass123",
         }
@@ -50,6 +56,9 @@ class SignUpViewTests(TestCase):
         """Test that successful signup redirects to login page"""
         data = {
             "username": "testuser",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
             "password1": "testpass123",
             "password2": "testpass123",
         }
@@ -62,6 +71,9 @@ class SignUpViewTests(TestCase):
         """Test that success message is displayed after signup"""
         data = {
             "username": "testuser",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
             "password1": "testpass123",
             "password2": "testpass123",
         }
@@ -78,6 +90,9 @@ class SignUpViewTests(TestCase):
         user_count_before = User.objects.count()
         data = {
             "username": "testuser",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
             "password1": "testpass123",
             "password2": "differentpass",
         }
@@ -91,6 +106,9 @@ class SignUpViewTests(TestCase):
         """Test that invalid form shows error messages"""
         data = {
             "username": "testuser",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
             "password1": "testpass123",
             "password2": "differentpass",
         }
@@ -104,6 +122,9 @@ class SignUpViewTests(TestCase):
         User.objects.create_user(username="existinguser", password="testpass123")
         data = {
             "username": "existinguser",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
             "password1": "testpass123",
             "password2": "testpass123",
         }
@@ -125,6 +146,9 @@ class SignUpViewTests(TestCase):
         """Test that weak password shows validation error"""
         data = {
             "username": "testuser",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
             "password1": "123",
             "password2": "123",
         }
@@ -132,6 +156,114 @@ class SignUpViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "form")
+
+    def test_signup_creates_default_organization(self):
+        """Test that signup creates a default organization for the user"""
+        data = {
+            "username": "testuser",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
+            "password1": "testpass123",
+            "password2": "testpass123",
+        }
+        response = self.client.post(self.signup_url, data)
+
+        user = User.objects.get(username="testuser")
+        user_profile = user.userprofile
+        organizations = Organization.objects.filter(
+            membership__user_profile=user_profile
+        )
+
+        self.assertEqual(organizations.count(), 1)
+        default_org = organizations.first()
+        self.assertEqual(default_org.name, "testuser")
+        self.assertTrue(default_org.is_default)
+
+    def test_signup_default_organization_has_admin_membership(self):
+        """Test that user is an admin member of the default organization"""
+        data = {
+            "username": "testuser",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
+            "password1": "testpass123",
+            "password2": "testpass123",
+        }
+        response = self.client.post(self.signup_url, data)
+
+        user = User.objects.get(username="testuser")
+        user_profile = user.userprofile
+        default_org = Organization.objects.get(
+            membership__user_profile=user_profile, is_default=True
+        )
+        membership = Membership.objects.get(
+            user_profile=user_profile, organization=default_org
+        )
+
+        self.assertEqual(membership.role, "admin")
+
+    def test_signup_requires_first_name(self):
+        """Test that first name is required"""
+        data = {
+            "username": "testuser",
+            "first_name": "",
+            "last_name": "User",
+            "email": "test@example.com",
+            "password1": "testpass123",
+            "password2": "testpass123",
+        }
+        response = self.client.post(self.signup_url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "form")
+        self.assertFalse(User.objects.filter(username="testuser").exists())
+
+    def test_signup_requires_last_name(self):
+        """Test that last name is required"""
+        data = {
+            "username": "testuser",
+            "first_name": "Test",
+            "last_name": "",
+            "email": "test@example.com",
+            "password1": "testpass123",
+            "password2": "testpass123",
+        }
+        response = self.client.post(self.signup_url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "form")
+        self.assertFalse(User.objects.filter(username="testuser").exists())
+
+    def test_signup_requires_email(self):
+        """Test that email is required"""
+        data = {
+            "username": "testuser",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "",
+            "password1": "testpass123",
+            "password2": "testpass123",
+        }
+        response = self.client.post(self.signup_url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "form")
+        self.assertFalse(User.objects.filter(username="testuser").exists())
+
+    def test_signup_saves_user_fields(self):
+        """Test that first name, last name, and email are saved to user"""
+        data = {
+            "username": "testuser",
+            "first_name": "John",
+            "last_name": "Doe",
+            "email": "john.doe@example.com",
+            "password1": "testpass123",
+            "password2": "testpass123",
+        }
+        response = self.client.post(self.signup_url, data)
+
+        user = User.objects.get(username="testuser")
+        self.assertEqual(user.first_name, "John")
+        self.assertEqual(user.last_name, "Doe")
+        self.assertEqual(user.email, "john.doe@example.com")
 
 
 class LoginViewTests(TestCase):
@@ -501,7 +633,7 @@ class OrganizationDetailViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Edit")
-        self.assertContains(response, "Delete")
+        self.assertContains(response, "Delete Organization")
 
     def test_organization_detail_hides_admin_actions_for_member(self):
         """Test that non-admin members don't see edit/delete actions."""
@@ -511,7 +643,7 @@ class OrganizationDetailViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Edit")
-        self.assertNotContains(response, "Delete")
+        self.assertNotContains(response, "Delete Organization")
 
 
 class OrganizationEditViewTests(TestCase):
@@ -718,3 +850,58 @@ class OrganizationDeleteViewTests(TestCase):
         self.assertEqual(len(messages), 1)
         self.assertIn("cannot delete", str(messages[0]).lower())
         self.assertIn("project", str(messages[0]).lower())
+
+    def test_organization_delete_prevents_deletion_of_default_org(self):
+        """Test that default organizations cannot be deleted."""
+        self.client.login(username="user1", password="testpass123")
+        default_org = Organization.objects.create(name="Default Org", is_default=True)
+        Membership.objects.create(
+            user_profile=self.user1_profile, organization=default_org, role="admin"
+        )
+
+        org_id = default_org.id
+        response = self.client.post(
+            reverse("accounts:organization_delete", args=[default_org.uid])
+        )
+        self.assertEqual(response.status_code, 302)  # Redirects with error
+        self.assertTrue(Organization.objects.filter(id=org_id).exists())
+
+    def test_organization_delete_default_org_shows_error(self):
+        """Test that error message is shown when trying to delete default org."""
+        self.client.login(username="user1", password="testpass123")
+        default_org = Organization.objects.create(name="Default Org", is_default=True)
+        Membership.objects.create(
+            user_profile=self.user1_profile, organization=default_org, role="admin"
+        )
+
+        response = self.client.post(
+            reverse("accounts:organization_delete", args=[default_org.uid]), follow=True
+        )
+        messages = list(get_messages(response.wsgi_request))
+        self.assertEqual(len(messages), 1)
+        self.assertIn("cannot delete", str(messages[0]).lower())
+        self.assertIn("default", str(messages[0]).lower())
+
+    def test_organization_detail_hides_delete_button_for_default_org(self):
+        """Test that delete button is hidden for default organizations."""
+        self.client.login(username="user1", password="testpass123")
+        default_org = Organization.objects.create(name="Default Org", is_default=True)
+        Membership.objects.create(
+            user_profile=self.user1_profile, organization=default_org, role="admin"
+        )
+
+        response = self.client.get(
+            reverse("accounts:organization_detail", args=[default_org.uid])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Edit")
+        self.assertNotContains(response, "Delete Organization")
+
+    def test_organization_detail_shows_delete_button_for_non_default_org(self):
+        """Test that delete button is shown for non-default organizations."""
+        self.client.login(username="user1", password="testpass123")
+        response = self.client.get(
+            reverse("accounts:organization_detail", args=[self.org1.uid])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Delete Organization")
