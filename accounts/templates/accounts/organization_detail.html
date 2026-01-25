@@ -58,7 +58,7 @@
                 </div>
             </div>
         </div>
-        {% if is_admin %}
+        {% if is_admin and not organization.is_default %}
             <div class="mt-4">
                 <form method="post"
                       action="{% url 'accounts:organization_delete' organization.uid %}"

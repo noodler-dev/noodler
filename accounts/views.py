@@ -172,6 +172,14 @@ def organization_delete(request, org_uid):
     organization = request.current_organization
     organization_name = organization.name
 
+    # Prevent deletion of default organizations
+    if organization.is_default:
+        messages.error(
+            request,
+            f'Cannot delete organization "{organization_name}" because it is your default organization. Default organizations cannot be deleted.',
+        )
+        return redirect("accounts:organization_detail", org_uid=organization.uid)
+
     # Check if organization has projects within a transaction with row lock
     # to prevent race condition where a project could be created between
     # the check and the delete

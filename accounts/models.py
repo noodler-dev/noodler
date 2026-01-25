@@ -8,7 +8,10 @@ class Organization(models.Model):
         default=uuid.uuid4, editable=False, unique=True, db_index=True
     )
     name = models.CharField(max_length=255)
-    is_default = models.BooleanField(default=False)
+    is_default = models.BooleanField(
+        default=False,
+        help_text="Indicates if this is the default organization automatically created for a user on signup. Default organizations cannot be deleted.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

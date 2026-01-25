@@ -633,7 +633,7 @@ class OrganizationDetailViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Edit")
-        self.assertContains(response, "Delete")
+        self.assertContains(response, "Delete Organization")
 
     def test_organization_detail_hides_admin_actions_for_member(self):
         """Test that non-admin members don't see edit/delete actions."""
@@ -643,7 +643,7 @@ class OrganizationDetailViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "Edit")
-        self.assertNotContains(response, "Delete")
+        self.assertNotContains(response, "Delete Organization")
 
 
 class OrganizationEditViewTests(TestCase):
@@ -850,3 +850,58 @@ class OrganizationDeleteViewTests(TestCase):
         self.assertEqual(len(messages), 1)
         self.assertIn("cannot delete", str(messages[0]).lower())
         self.assertIn("project", str(messages[0]).lower())
+
+    def test_organization_delete_prevents_deletion_of_default_org(self):
+        """Test that default organizations cannot be deleted."""
+        self.client.login(username="user1", password="testpass123")
+        default_org = Organization.objects.create(name="Default Org", is_default=True)
+        Membership.objects.create(
+            user_profile=self.user1_profile, organization=default_org, role="admin"
+        )
+
+        org_id = default_org.id
+        response = self.client.post(
+            reverse("accounts:organization_delete", args=[default_org.uid])
+        )
+        self.assertEqual(response.status_code, 302)  # Redirects with error
+        self.assertTrue(Organization.objects.filter(id=org_id).exists())
+
+    def test_organization_delete_default_org_shows_error(self):
+        """Test that error message is shown when trying to delete default org."""
+        self.client.login(username="user1", password="testpass123")
+        default_org = Organization.objects.create(name="Default Org", is_default=True)
+        Membership.objects.create(
+            user_profile=self.user1_profile, organization=default_org, role="admin"
+        )
+
+        response = self.client.post(
+            reverse("accounts:organization_delete", args=[default_org.uid]), follow=True
+        )
+        messages = list(get_messages(response.wsgi_request))
+        self.assertEqual(len(messages), 1)
+        self.assertIn("cannot delete", str(messages[0]).lower())
+        self.assertIn("default", str(messages[0]).lower())
+
+    def test_organization_detail_hides_delete_button_for_default_org(self):
+        """Test that delete button is hidden for default organizations."""
+        self.client.login(username="user1", password="testpass123")
+        default_org = Organization.objects.create(name="Default Org", is_default=True)
+        Membership.objects.create(
+            user_profile=self.user1_profile, organization=default_org, role="admin"
+        )
+
+        response = self.client.get(
+            reverse("accounts:organization_detail", args=[default_org.uid])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Edit")
+        self.assertNotContains(response, "Delete Organization")
+
+    def test_organization_detail_shows_delete_button_for_non_default_org(self):
+        """Test that delete button is shown for non-default organizations."""
+        self.client.login(username="user1", password="testpass123")
+        response = self.client.get(
+            reverse("accounts:organization_detail", args=[self.org1.uid])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Delete Organization")
