@@ -1,54 +1,53 @@
 {% extends "base.html" %}
-
 {% block title %}Projects{% endblock %}
-
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Projects</h1>
-        <a href="{% url 'projects:create' %}" class="btn btn-primary">Create Project</a>
-    </div>
-
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        {% endfor %}
-    {% endif %}
-
-    {% if projects %}
-        <div class="list-group">
-            {% for project in projects %}
-                <div class="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="mb-1">
-                            <a href="{% url 'projects:detail' project.uid %}" class="text-decoration-none">
-                                {{ project.name }}
-                            </a>
-                        </h5>
-                        <small class="text-muted">{{ project.organization.name }}</small>
-                        {% if current_project_id == project.id %}
-                            <span class="badge bg-success ms-2">Current</span>
-                        {% endif %}
-                    </div>
-                    <div>
-                        {% if current_project_id != project.id %}
-                            <form method="post" action="{% url 'projects:switch' project.uid %}" class="d-inline">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-primary">Switch</button>
-                            </form>
-                        {% endif %}
-                        <a href="{% url 'projects:edit' project.uid %}" class="btn btn-sm btn-outline-secondary">Edit</a>
-                    </div>
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Projects</h1>
+            <a href="{% url 'projects:create' %}" class="btn btn-primary">Create Project</a>
+        </div>
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show"
+                     role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             {% endfor %}
-        </div>
-    {% else %}
-        <div class="alert alert-info">
-            <p class="mb-0">No projects found. <a href="{% url 'projects:create' %}">Create your first project</a> to get started.</p>
-        </div>
-    {% endif %}
-</div>
+        {% endif %}
+        {% if projects %}
+            <div class="list-group">
+                {% for project in projects %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1">
+                                <a href="{% url 'projects:detail' project.uid %}"
+                                   class="text-decoration-none">{{ project.name }}</a>
+                            </h5>
+                            <small class="text-muted">{{ project.organization.name }}</small>
+                            {% if current_project_id == project.id %}<span class="badge bg-success ms-2">Current</span>{% endif %}
+                        </div>
+                        <div>
+                            {% if current_project_id != project.id %}
+                                <form method="post"
+                                      action="{% url 'projects:switch' project.uid %}"
+                                      class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Switch</button>
+                                </form>
+                            {% endif %}
+                            <a href="{% url 'projects:edit' project.uid %}"
+                               class="btn btn-sm btn-outline-secondary">Edit</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <p class="mb-0">
+                    No projects found. <a href="{% url 'projects:create' %}">Create your first project</a> to get started.
+                </p>
+            </div>
+        {% endif %}
+    </div>
 {% endblock %}

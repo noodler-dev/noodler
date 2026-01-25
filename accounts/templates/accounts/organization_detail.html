@@ -1,74 +1,72 @@
 {% extends "base.html" %}
-
 {% block title %}{{ organization.name }}{% endblock %}
-
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1>{{ organization.name }}</h1>
-            <p class="text-muted mb-0">Created {{ organization.created_at|date:"M d, Y" }}</p>
-        </div>
-        <div>
-            {% if is_admin %}
-                <a href="{% url 'accounts:organization_edit' organization.uid %}" class="btn btn-outline-secondary">Edit</a>
-            {% endif %}
-        </div>
-    </div>
-
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1>{{ organization.name }}</h1>
+                <p class="text-muted mb-0">Created {{ organization.created_at|date:"M d, Y" }}</p>
             </div>
-        {% endfor %}
-    {% endif %}
-
-    <div class="row">
-        <div class="col-md-8">
-            <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Projects</h5>
-                    <a href="{% url 'projects:create' %}" class="btn btn-sm btn-primary">
-                        Create Project
-                    </a>
+            <div>
+                {% if is_admin %}
+                    <a href="{% url 'accounts:organization_edit' organization.uid %}"
+                       class="btn btn-outline-secondary">Edit</a>
+                {% endif %}
+            </div>
+        </div>
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show"
+                     role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
-                <div class="card-body">
-                    {% if projects %}
-                        <div class="list-group">
-                            {% for project in projects %}
-                                <div class="list-group-item">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-1">
-                                                <a href="{% url 'projects:detail' project.uid %}" class="text-decoration-none">
-                                                    {{ project.name }}
-                                                </a>
-                                            </h6>
-                                            <small class="text-muted">Created {{ project.created_at|date:"M d, Y" }}</small>
+            {% endfor %}
+        {% endif %}
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Projects</h5>
+                        <a href="{% url 'projects:create' %}" class="btn btn-sm btn-primary">Create Project</a>
+                    </div>
+                    <div class="card-body">
+                        {% if projects %}
+                            <div class="list-group">
+                                {% for project in projects %}
+                                    <div class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-1">
+                                                    <a href="{% url 'projects:detail' project.uid %}"
+                                                       class="text-decoration-none">{{ project.name }}</a>
+                                                </h6>
+                                                <small class="text-muted">Created {{ project.created_at|date:"M d, Y" }}</small>
+                                            </div>
+                                            <a href="{% url 'projects:detail' project.uid %}"
+                                               class="btn btn-sm btn-outline-primary">View</a>
                                         </div>
-                                        <a href="{% url 'projects:detail' project.uid %}" class="btn btn-sm btn-outline-primary">View</a>
                                     </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <p class="text-muted mb-0">No projects yet. <a href="{% url 'projects:create' %}">Create one</a> to get started.</p>
-                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted mb-0">
+                                No projects yet. <a href="{% url 'projects:create' %}">Create one</a> to get started.
+                            </p>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
+        {% if is_admin %}
+            <div class="mt-4">
+                <form method="post"
+                      action="{% url 'accounts:organization_delete' organization.uid %}"
+                      onsubmit="return confirm('Are you sure you want to delete this organization? This action cannot be undone and will delete all associated projects.');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete Organization</button>
+                </form>
+            </div>
+        {% endif %}
     </div>
-
-    {% if is_admin %}
-        <div class="mt-4">
-            <form method="post" action="{% url 'accounts:organization_delete' organization.uid %}" onsubmit="return confirm('Are you sure you want to delete this organization? This action cannot be undone and will delete all associated projects.');">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-danger">Delete Organization</button>
-            </form>
-        </div>
-    {% endif %}
-</div>
 {% endblock %}
-

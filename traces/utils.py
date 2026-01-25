@@ -46,7 +46,7 @@ def extract_conversation_messages(spans):
                                 content = part.get("content", "")
                                 if content:
                                     content_parts.append(content)
-                        
+
                         if content_parts:
                             conversation.append(
                                 {
