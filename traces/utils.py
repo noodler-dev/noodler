@@ -8,6 +8,23 @@ def convert_nano_to_datetime(nano_timestamp: int) -> datetime:
     return datetime.fromtimestamp(nano_timestamp / 1e9, timezone.UTC)
 
 
+def format_duration(start, end):
+    """Format duration between two datetimes as a human-readable string."""
+    if not start or not end:
+        return None
+    delta = end - start
+    total_seconds = int(delta.total_seconds())
+    if total_seconds < 1:
+        milliseconds = int(delta.total_seconds() * 1000)
+        return f"{milliseconds}ms"
+    elif total_seconds < 60:
+        return f"{total_seconds}s"
+    else:
+        minutes = total_seconds // 60
+        seconds = total_seconds % 60
+        return f"{minutes}m {seconds}s"
+
+
 def extract_attribute_value(attr: dict):
     value_dict = attr.get("value", {})
 

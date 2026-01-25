@@ -4,23 +4,7 @@ from django.contrib import messages
 from django.shortcuts import render, get_object_or_404, redirect
 from projects.decorators import require_project_access
 from .models import Trace, Span
-
-
-def format_duration(start, end):
-    """Format duration between two datetimes as a human-readable string."""
-    if not start or not end:
-        return None
-    delta = end - start
-    total_seconds = int(delta.total_seconds())
-    if total_seconds < 1:
-        milliseconds = int(delta.total_seconds() * 1000)
-        return f"{milliseconds}ms"
-    elif total_seconds < 60:
-        return f"{total_seconds}s"
-    else:
-        minutes = total_seconds // 60
-        seconds = total_seconds % 60
-        return f"{minutes}m {seconds}s"
+from .utils import format_duration
 
 
 def extract_conversation_messages(spans):
