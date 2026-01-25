@@ -4,23 +4,7 @@ from django.contrib import messages
 from django.shortcuts import render, get_object_or_404, redirect
 from projects.decorators import require_project_access
 from .models import Trace, Span
-
-
-def format_duration(start, end):
-    """Format duration between two datetimes as a human-readable string."""
-    if not start or not end:
-        return None
-    delta = end - start
-    total_seconds = int(delta.total_seconds())
-    if total_seconds < 1:
-        milliseconds = int(delta.total_seconds() * 1000)
-        return f"{milliseconds}ms"
-    elif total_seconds < 60:
-        return f"{total_seconds}s"
-    else:
-        minutes = total_seconds // 60
-        seconds = total_seconds % 60
-        return f"{minutes}m {seconds}s"
+from .utils import format_duration, extract_conversation_messages
 
 
 @login_required
@@ -65,8 +49,17 @@ def trace_detail(request, trace_uid):
     # Get all spans for this trace, ordered by start_time
     spans = Span.objects.filter(trace=trace).order_by("start_time")
 
+    # Extract conversation messages
+    conversation_messages = extract_conversation_messages(spans)
+
     # Calculate durations for trace and spans
     trace_duration = format_duration(trace.started_at, trace.ended_at)
+
+    # Calculate total tokens across all spans
+    total_input_tokens = sum(span.input_tokens or 0 for span in spans)
+    total_output_tokens = sum(span.output_tokens or 0 for span in spans)
+    total_tokens = total_input_tokens + total_output_tokens
+
     spans_with_duration = []
     for span in spans:
         span_duration = format_duration(span.start_time, span.end_time)
@@ -104,6 +97,8 @@ def trace_detail(request, trace_uid):
         "trace": trace,
         "trace_duration": trace_duration,
         "spans_with_duration": spans_with_duration,
+        "conversation_messages": conversation_messages,
+        "total_tokens": total_tokens,
         "current_project": request.current_project,
     }
     return render(request, "traces/detail.html", context)

@@ -8,6 +8,83 @@ def convert_nano_to_datetime(nano_timestamp: int) -> datetime:
     return datetime.fromtimestamp(nano_timestamp / 1e9, timezone.UTC)
 
 
+def format_duration(start, end):
+    """Format duration between two datetimes as a human-readable string."""
+    if not start or not end:
+        return None
+    delta = end - start
+    total_seconds = int(delta.total_seconds())
+    if total_seconds < 1:
+        milliseconds = int(delta.total_seconds() * 1000)
+        return f"{milliseconds}ms"
+    elif total_seconds < 60:
+        return f"{total_seconds}s"
+    else:
+        minutes = total_seconds // 60
+        seconds = total_seconds % 60
+        return f"{minutes}m {seconds}s"
+
+
+def extract_conversation_messages(spans):
+    """
+    Extract conversation messages from spans.
+    Returns a list of message dictionaries with role, content, and metadata.
+    """
+    conversation = []
+
+    for span in spans:
+        # Extract input messages (user and system messages)
+        if span.input_messages and isinstance(span.input_messages, list):
+            for msg in span.input_messages:
+                if isinstance(msg, dict):
+                    role = msg.get("role")
+                    if role in ("user", "system"):
+                        parts = msg.get("parts", [])
+                        content_parts = []
+                        for part in parts:
+                            if isinstance(part, dict) and part.get("type") == "text":
+                                content = part.get("content", "")
+                                if content:
+                                    content_parts.append(content)
+                        
+                        if content_parts:
+                            conversation.append(
+                                {
+                                    "role": role,
+                                    "content": "\n".join(content_parts),
+                                    "span_id": span.id,
+                                    "span_name": span.name,
+                                    "timestamp": span.start_time,
+                                }
+                            )
+
+        # Extract output messages (assistant messages)
+        if span.output_messages and isinstance(span.output_messages, list):
+            for msg in span.output_messages:
+                if isinstance(msg, dict) and msg.get("role") == "assistant":
+                    parts = msg.get("parts", [])
+                    content_parts = []
+                    for part in parts:
+                        if isinstance(part, dict) and part.get("type") == "text":
+                            content = part.get("content", "")
+                            if content:
+                                content_parts.append(content)
+
+                    if content_parts:
+                        conversation.append(
+                            {
+                                "role": "assistant",
+                                "content": "\n".join(content_parts),
+                                "finish_reason": msg.get("finish_reason"),
+                                "span_id": span.id,
+                                "span_name": span.name,
+                                "timestamp": span.end_time or span.start_time,
+                            }
+                        )
+
+    return conversation
+
+
 def extract_attribute_value(attr: dict):
     value_dict = attr.get("value", {})
 

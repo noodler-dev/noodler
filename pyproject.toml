@@ -11,3 +11,8 @@ dependencies = [
     "opentelemetry-proto>=1.39.1",
     "protobuf>=6.33.2",
 ]
+
+[dependency-groups]
+dev = [
+    "djlint>=1.36.4",
+]

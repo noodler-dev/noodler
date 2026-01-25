@@ -26,60 +26,100 @@
         {% endfor %}
     {% endif %}
 
-    <div class="row mb-4">
-        <div class="col-md-6">
+    <!-- Quick Stats -->
+    <div class="row mb-3">
+        <div class="col-12">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Trace Information</h5>
-                </div>
                 <div class="card-body">
-                    <dl class="row mb-0">
-                        <dt class="col-sm-4">Trace ID:</dt>
-                        <dd class="col-sm-8"><code>{{ trace.otel_trace_id }}</code></dd>
-                        
-                        <dt class="col-sm-4">Project:</dt>
-                        <dd class="col-sm-8">{{ trace.project.name }}</dd>
-                        
-                        <dt class="col-sm-4">Started:</dt>
-                        <dd class="col-sm-8">{{ trace.started_at|date:"M d, Y H:i:s" }}</dd>
-                        
-                        <dt class="col-sm-4">Ended:</dt>
-                        <dd class="col-sm-8">{{ trace.ended_at|date:"M d, Y H:i:s" }}</dd>
-                        
-                        <dt class="col-sm-4">Duration:</dt>
-                        <dd class="col-sm-8">
-                            {% if trace_duration %}
-                                {{ trace_duration }}
-                            {% else %}
-                                <span class="text-muted">N/A</span>
-                            {% endif %}
-                        </dd>
-                    </dl>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Summary</h5>
-                </div>
-                <div class="card-body">
-                    <dl class="row mb-0">
-                        <dt class="col-sm-6">Total Spans:</dt>
-                        <dd class="col-sm-6">{{ spans_with_duration|length }}</dd>
-                    </dl>
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="mb-2">
+                                <h3 class="mb-0">{{ conversation_messages|length }}</h3>
+                                <small class="text-muted">Messages</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-2">
+                                <h3 class="mb-0">
+                                    {% if trace_duration %}
+                                        {{ trace_duration }}
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </h3>
+                                <small class="text-muted">Duration</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-2">
+                                <h3 class="mb-0">
+                                    {% if total_tokens %}
+                                        {{ total_tokens|floatformat:0 }}
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </h3>
+                                <small class="text-muted">Total Tokens</small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-header">
-            <h5 class="mb-0">Spans</h5>
-        </div>
-        <div class="card-body">
-            {% if spans_with_duration %}
-                <div class="accordion" id="spansAccordion">
+    <div class="row">
+        <!-- Main Content: Conversation & Spans -->
+        <div class="col-lg-8 col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Conversation & Spans</h5>
+                    <div class="btn-group" role="group" aria-label="View toggle">
+                        <input type="radio" class="btn-check" name="viewToggle" id="viewConversation" autocomplete="off" checked>
+                        <label class="btn btn-outline-primary" for="viewConversation">Conversation</label>
+                        
+                        <input type="radio" class="btn-check" name="viewToggle" id="viewRaw" autocomplete="off">
+                        <label class="btn btn-outline-primary" for="viewRaw">Raw</label>
+                    </div>
+                </div>
+                <div class="card-body">
+            <!-- Conversation View -->
+            <div id="conversationView">
+                {% if conversation_messages %}
+                    <div class="conversation-container" style="max-height: 70vh; overflow-y: auto;">
+                        {% for msg in conversation_messages %}
+                            <div class="mb-4">
+                                <div class="fw-bold mb-2">
+                                    {% if msg.role == "user" %}
+                                        User
+                                    {% elif msg.role == "system" %}
+                                        System
+                                    {% else %}
+                                        Assistant
+                                    {% endif %}
+                                    <span class="text-muted small ms-2" style="font-weight: normal;">
+                                        {{ msg.timestamp|date:"H:i:s" }}
+                                    </span>
+                                    {% if msg.finish_reason %}
+                                        <span class="badge bg-secondary ms-2">{{ msg.finish_reason }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="message-content" style="white-space: pre-wrap;">{{ msg.content }}</div>
+                            </div>
+                            {% if not forloop.last %}
+                                <hr class="my-3">
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">No conversation messages found in this trace.</p>
+                {% endif %}
+            </div>
+
+            <!-- Span Details View -->
+            <div id="rawView" style="display: none;">
+                {% if spans_with_duration %}
+                    <div class="accordion" id="spansAccordion">
                     {% for item in spans_with_duration %}
                         <div class="accordion-item">
                             <h2 class="accordion-header" id="heading{{ item.span.id }}">
@@ -104,144 +144,243 @@
                             </h2>
                             <div id="collapse{{ item.span.id }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" aria-labelledby="heading{{ item.span.id }}" data-bs-parent="#spansAccordion">
                                 <div class="accordion-body">
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <h6>Timing</h6>
-                                            <dl class="row mb-3">
-                                                <dt class="col-sm-5">Start Time:</dt>
-                                                <dd class="col-sm-7">{{ item.span.start_time|date:"M d, Y H:i:s.u" }}</dd>
-                                                
-                                                {% if item.span.end_time %}
-                                                    <dt class="col-sm-5">End Time:</dt>
-                                                    <dd class="col-sm-7">{{ item.span.end_time|date:"M d, Y H:i:s.u" }}</dd>
-                                                    
-                                                    <dt class="col-sm-5">Duration:</dt>
-                                                    <dd class="col-sm-7">
-                                                        {% if item.duration %}
-                                                            {{ item.duration }}
-                                                        {% else %}
-                                                            <span class="text-muted">N/A</span>
-                                                        {% endif %}
-                                                    </dd>
-                                                {% else %}
-                                                    <dt class="col-sm-5">Status:</dt>
-                                                    <dd class="col-sm-7"><span class="badge bg-warning">In Progress</span></dd>
-                                                {% endif %}
-                                            </dl>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <h6>Provider Information</h6>
-                                            <dl class="row mb-3">
-                                                {% if item.span.provider_name %}
-                                                    <dt class="col-sm-5">Provider:</dt>
-                                                    <dd class="col-sm-7">{{ item.span.provider_name }}</dd>
-                                                {% endif %}
-                                                
-                                                {% if item.span.request_model %}
-                                                    <dt class="col-sm-5">Request Model:</dt>
-                                                    <dd class="col-sm-7"><code>{{ item.span.request_model }}</code></dd>
-                                                {% endif %}
-                                                
-                                                {% if item.span.response_model %}
-                                                    <dt class="col-sm-5">Response Model:</dt>
-                                                    <dd class="col-sm-7"><code>{{ item.span.response_model }}</code></dd>
-                                                {% endif %}
-                                                
-                                                {% if item.span.response_id %}
-                                                    <dt class="col-sm-5">Response ID:</dt>
-                                                    <dd class="col-sm-7"><code>{{ item.span.response_id }}</code></dd>
-                                                {% endif %}
-                                            </dl>
-                                        </div>
-                                    </div>
-
-                                    {% if item.span.input_tokens or item.span.output_tokens %}
-                                        <div class="row mb-3">
-                                            <div class="col-12">
-                                                <h6>Token Usage</h6>
-                                                <dl class="row mb-0">
-                                                    {% if item.span.input_tokens %}
-                                                        <dt class="col-sm-3">Input Tokens:</dt>
-                                                        <dd class="col-sm-3">{{ item.span.input_tokens|floatformat:0 }}</dd>
-                                                    {% endif %}
-                                                    
-                                                    {% if item.span.output_tokens %}
-                                                        <dt class="col-sm-3">Output Tokens:</dt>
-                                                        <dd class="col-sm-3">{{ item.span.output_tokens|floatformat:0 }}</dd>
-                                                    {% endif %}
-                                                    
-                                                    {% if item.span.input_tokens and item.span.output_tokens %}
-                                                        <dt class="col-sm-3">Total Tokens:</dt>
-                                                        <dd class="col-sm-3">{{ item.span.input_tokens|add:item.span.output_tokens|floatformat:0 }}</dd>
-                                                    {% endif %}
-                                                </dl>
-                                            </div>
-                                        </div>
-                                    {% endif %}
-
-                                    {% if item.span.max_tokens or item.span.top_p %}
-                                        <div class="row mb-3">
-                                            <div class="col-12">
-                                                <h6>Parameters</h6>
-                                                <dl class="row mb-0">
-                                                    {% if item.span.max_tokens %}
-                                                        <dt class="col-sm-3">Max Tokens:</dt>
-                                                        <dd class="col-sm-3">{{ item.span.max_tokens }}</dd>
-                                                    {% endif %}
-                                                    
-                                                    {% if item.span.top_p %}
-                                                        <dt class="col-sm-3">Top P:</dt>
-                                                        <dd class="col-sm-3">{{ item.span.top_p }}</dd>
-                                                    {% endif %}
-                                                </dl>
-                                            </div>
-                                        </div>
-                                    {% endif %}
-
-                                    {% if item.finished_reasons_json %}
-                                        <div class="row mb-3">
-                                            <div class="col-12">
-                                                <h6>Finished Reasons</h6>
-                                                <pre class="bg-light p-2 rounded"><code>{{ item.finished_reasons_json }}</code></pre>
-                                            </div>
-                                        </div>
-                                    {% endif %}
-
-                                    {% if item.system_instructions_json %}
-                                        <div class="row mb-3">
-                                            <div class="col-12">
-                                                <h6>System Instructions</h6>
-                                                <pre class="bg-light p-2 rounded"><code>{{ item.system_instructions_json }}</code></pre>
-                                            </div>
-                                        </div>
-                                    {% endif %}
-
                                     {% if item.input_messages_json %}
-                                        <div class="row mb-3">
-                                            <div class="col-12">
-                                                <h6>Input Messages</h6>
-                                                <pre class="bg-light p-2 rounded" style="max-height: 300px; overflow-y: auto;"><code>{{ item.input_messages_json }}</code></pre>
-                                            </div>
+                                        <div class="mb-3">
+                                            <h6>Input Messages</h6>
+                                            <pre class="bg-light p-2 rounded" style="max-height: 300px; overflow-y: auto;"><code>{{ item.input_messages_json }}</code></pre>
                                         </div>
                                     {% endif %}
 
                                     {% if item.output_messages_json %}
-                                        <div class="row mb-3">
-                                            <div class="col-12">
-                                                <h6>Output Messages</h6>
-                                                <pre class="bg-light p-2 rounded" style="max-height: 300px; overflow-y: auto;"><code>{{ item.output_messages_json }}</code></pre>
-                                            </div>
+                                        <div class="mb-3">
+                                            <h6>Output Messages</h6>
+                                            <pre class="bg-light p-2 rounded" style="max-height: 300px; overflow-y: auto;"><code>{{ item.output_messages_json }}</code></pre>
+                                        </div>
+                                    {% endif %}
+
+                                    {% if item.finished_reasons_json %}
+                                        <div class="mb-3">
+                                            <h6>Finished Reasons</h6>
+                                            <pre class="bg-light p-2 rounded"><code>{{ item.finished_reasons_json }}</code></pre>
                                         </div>
                                     {% endif %}
                                 </div>
                             </div>
                         </div>
                     {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">No spans found for this trace.</p>
+                {% endif %}
                 </div>
-            {% else %}
-                <p class="text-muted mb-0">No spans found for this trace.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Trace Information & Summary -->
+        <div class="col-lg-4 col-md-12">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Trace Information</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">OTel Trace ID:</dt>
+                        <dd class="col-sm-7"><code>{{ trace.otel_trace_id }}</code></dd>
+                        
+                        <dt class="col-sm-5">Project:</dt>
+                        <dd class="col-sm-7">{{ trace.project.name }}</dd>
+                        
+                        <dt class="col-sm-5">Started:</dt>
+                        <dd class="col-sm-7">{{ trace.started_at|date:"M d, Y H:i:s" }}</dd>
+                        
+                        <dt class="col-sm-5">Ended:</dt>
+                        <dd class="col-sm-7">{{ trace.ended_at|date:"M d, Y H:i:s" }}</dd>
+                        
+                        <dt class="col-sm-5">Duration:</dt>
+                        <dd class="col-sm-7">
+                            {% if trace_duration %}
+                                {{ trace_duration }}
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Summary</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-6">Total Spans:</dt>
+                        <dd class="col-sm-6">{{ spans_with_duration|length }}</dd>
+                        <dt class="col-sm-6">Messages:</dt>
+                        <dd class="col-sm-6">{{ conversation_messages|length }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Spans -->
+            {% if spans_with_duration %}
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Spans</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="accordion accordion-flush" id="sidebarSpansAccordion">
+                            {% for item in spans_with_duration %}
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="sidebarHeading{{ item.span.id }}">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarCollapse{{ item.span.id }}" aria-expanded="false" aria-controls="sidebarCollapse{{ item.span.id }}">
+                                            <div class="w-100">
+                                                <div class="fw-bold">{{ item.span.name }}</div>
+                                                <small class="text-muted">
+                                                    <code>{{ item.span.otel_span_id }}</code>
+                                                    {% if item.duration %} • {{ item.duration }}{% endif %}
+                                                </small>
+                                            </div>
+                                        </button>
+                                    </h2>
+                                    <div id="sidebarCollapse{{ item.span.id }}" class="accordion-collapse collapse" aria-labelledby="sidebarHeading{{ item.span.id }}" data-bs-parent="#sidebarSpansAccordion">
+                                        <div class="accordion-body">
+                                            <!-- Basic Info -->
+                                            <div class="mb-3">
+                                                <h6 class="small text-muted mb-2">Timing</h6>
+                                                <dl class="row mb-0 small">
+                                                    <dt class="col-5">Start:</dt>
+                                                    <dd class="col-7">{{ item.span.start_time|date:"H:i:s.u" }}</dd>
+                                                    
+                                                    {% if item.span.end_time %}
+                                                        <dt class="col-5">End:</dt>
+                                                        <dd class="col-7">{{ item.span.end_time|date:"H:i:s.u" }}</dd>
+                                                        
+                                                        <dt class="col-5">Duration:</dt>
+                                                        <dd class="col-7">
+                                                            {% if item.duration %}
+                                                                {{ item.duration }}
+                                                            {% else %}
+                                                                <span class="text-muted">N/A</span>
+                                                            {% endif %}
+                                                        </dd>
+                                                    {% else %}
+                                                        <dt class="col-5">Status:</dt>
+                                                        <dd class="col-7"><span class="badge bg-warning">In Progress</span></dd>
+                                                    {% endif %}
+                                                </dl>
+                                            </div>
+
+                                            <!-- Configuration -->
+                                            {% if item.span.provider_name or item.span.request_model or item.span.response_model or item.span.max_tokens or item.span.top_p or item.system_instructions_json %}
+                                                <div class="mb-3">
+                                                    <h6 class="small text-muted mb-2">Configuration</h6>
+                                                    <dl class="row mb-0 small">
+                                                        {% if item.span.provider_name %}
+                                                            <dt class="col-5">Provider:</dt>
+                                                            <dd class="col-7">{{ item.span.provider_name }}</dd>
+                                                        {% endif %}
+                                                        
+                                                        {% if item.span.request_model %}
+                                                            <dt class="col-5">Request Model:</dt>
+                                                            <dd class="col-7"><code>{{ item.span.request_model }}</code></dd>
+                                                        {% endif %}
+                                                        
+                                                        {% if item.span.response_model %}
+                                                            <dt class="col-5">Response Model:</dt>
+                                                            <dd class="col-7"><code>{{ item.span.response_model }}</code></dd>
+                                                        {% endif %}
+                                                        
+                                                        {% if item.span.response_id %}
+                                                            <dt class="col-5">Response ID:</dt>
+                                                            <dd class="col-7"><code>{{ item.span.response_id }}</code></dd>
+                                                        {% endif %}
+                                                        
+                                                        {% if item.span.max_tokens %}
+                                                            <dt class="col-5">Max Tokens:</dt>
+                                                            <dd class="col-7">{{ item.span.max_tokens }}</dd>
+                                                        {% endif %}
+                                                        
+                                                        {% if item.span.top_p %}
+                                                            <dt class="col-5">Top P:</dt>
+                                                            <dd class="col-7">{{ item.span.top_p }}</dd>
+                                                        {% endif %}
+                                                    </dl>
+                                                    
+                                                    {% if item.system_instructions_json %}
+                                                        <div class="mt-2">
+                                                            <dt class="small text-muted mb-1">System Instructions:</dt>
+                                                            <pre class="bg-light p-2 rounded small mb-0" style="max-height: 150px; overflow-y: auto; font-size: 0.7rem;"><code>{{ item.system_instructions_json }}</code></pre>
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            {% endif %}
+
+                                            <!-- Usage -->
+                                            {% if item.span.input_tokens or item.span.output_tokens %}
+                                                <div class="mb-0">
+                                                    <h6 class="small text-muted mb-2">Usage</h6>
+                                                    <dl class="row mb-0 small">
+                                                        {% if item.span.input_tokens %}
+                                                            <dt class="col-5">Input Tokens:</dt>
+                                                            <dd class="col-7">{{ item.span.input_tokens|floatformat:0 }}</dd>
+                                                        {% endif %}
+                                                        
+                                                        {% if item.span.output_tokens %}
+                                                            <dt class="col-5">Output Tokens:</dt>
+                                                            <dd class="col-7">{{ item.span.output_tokens|floatformat:0 }}</dd>
+                                                        {% endif %}
+                                                        
+                                                        {% if item.span.input_tokens and item.span.output_tokens %}
+                                                            <dt class="col-5">Total Tokens:</dt>
+                                                            <dd class="col-7">{{ item.span.input_tokens|add:item.span.output_tokens|floatformat:0 }}</dd>
+                                                        {% endif %}
+                                                    </dl>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
             {% endif %}
         </div>
     </div>
 </div>
+
+<script>
+    // Toggle between conversation and raw views
+    document.addEventListener('DOMContentLoaded', function() {
+        const conversationView = document.getElementById('conversationView');
+        const rawView = document.getElementById('rawView');
+        const viewConversation = document.getElementById('viewConversation');
+        const viewRaw = document.getElementById('viewRaw');
+
+        viewConversation.addEventListener('change', function() {
+            if (this.checked) {
+                conversationView.style.display = 'block';
+                rawView.style.display = 'none';
+            }
+        });
+
+        viewRaw.addEventListener('change', function() {
+            if (this.checked) {
+                conversationView.style.display = 'none';
+                rawView.style.display = 'block';
+            }
+        });
+    });
+</script>
+
+<style>
+    .conversation-container {
+        padding: 1rem;
+    }
+    .message-content {
+        line-height: 1.6;
+        word-wrap: break-word;
+    }
+</style>
 {% endblock %}
