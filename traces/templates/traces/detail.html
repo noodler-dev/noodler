@@ -26,6 +26,48 @@
         {% endfor %}
     {% endif %}
 
+    <!-- Quick Stats -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="mb-2">
+                                <h3 class="mb-0">{{ conversation_messages|length }}</h3>
+                                <small class="text-muted">Messages</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-2">
+                                <h3 class="mb-0">
+                                    {% if trace_duration %}
+                                        {{ trace_duration }}
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </h3>
+                                <small class="text-muted">Duration</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-2">
+                                <h3 class="mb-0">
+                                    {% if total_tokens %}
+                                        {{ total_tokens|floatformat:0 }}
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </h3>
+                                <small class="text-muted">Total Tokens</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <!-- Main Content: Conversation & Spans -->
         <div class="col-lg-8 col-md-12 mb-4">

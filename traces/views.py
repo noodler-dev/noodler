@@ -54,6 +54,12 @@ def trace_detail(request, trace_uid):
 
     # Calculate durations for trace and spans
     trace_duration = format_duration(trace.started_at, trace.ended_at)
+    
+    # Calculate total tokens across all spans
+    total_input_tokens = sum(span.input_tokens or 0 for span in spans)
+    total_output_tokens = sum(span.output_tokens or 0 for span in spans)
+    total_tokens = total_input_tokens + total_output_tokens
+    
     spans_with_duration = []
     for span in spans:
         span_duration = format_duration(span.start_time, span.end_time)
@@ -92,6 +98,7 @@ def trace_detail(request, trace_uid):
         "trace_duration": trace_duration,
         "spans_with_duration": spans_with_duration,
         "conversation_messages": conversation_messages,
+        "total_tokens": total_tokens,
         "current_project": request.current_project,
     }
     return render(request, "traces/detail.html", context)
