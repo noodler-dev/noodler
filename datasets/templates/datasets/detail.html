@@ -39,15 +39,25 @@
                     <div class="card-body">
                         <dl class="row mb-0">
                             <dt class="col-sm-3">Name:</dt>
-                            <dd class="col-sm-9">{{ dataset.name }}</dd>
+                            <dd class="col-sm-9">
+                                {{ dataset.name }}
+                            </dd>
                             <dt class="col-sm-3">Project:</dt>
-                            <dd class="col-sm-9">{{ dataset.project.name }}</dd>
+                            <dd class="col-sm-9">
+                                {{ dataset.project.name }}
+                            </dd>
                             <dt class="col-sm-3">Number of Traces:</dt>
-                            <dd class="col-sm-9">{{ trace_count }}</dd>
+                            <dd class="col-sm-9">
+                                {{ trace_count }}
+                            </dd>
                             <dt class="col-sm-3">Created:</dt>
-                            <dd class="col-sm-9">{{ dataset.created_at|date:"M d, Y H:i:s" }}</dd>
+                            <dd class="col-sm-9">
+                                {{ dataset.created_at|date:"M d, Y H:i:s" }}
+                            </dd>
                             <dt class="col-sm-3">Last Updated:</dt>
-                            <dd class="col-sm-9">{{ dataset.updated_at|date:"M d, Y H:i:s" }}</dd>
+                            <dd class="col-sm-9">
+                                {{ dataset.updated_at|date:"M d, Y H:i:s" }}
+                            </dd>
                         </dl>
                     </div>
                 </div>
@@ -106,4 +116,3 @@
         </div>
     </div>
 {% endblock %}
-

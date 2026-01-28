@@ -99,9 +99,7 @@ def dataset_create(request):
             )
 
         # Create the dataset
-        dataset = create_dataset_from_traces(
-            request.current_project, name, num_traces
-        )
+        dataset = create_dataset_from_traces(request.current_project, name, num_traces)
 
         actual_count = dataset.traces.count()
         if actual_count < num_traces:
@@ -111,7 +109,8 @@ def dataset_create(request):
             )
         else:
             messages.success(
-                request, f'Dataset "{dataset.name}" created successfully with {actual_count} traces.'
+                request,
+                f'Dataset "{dataset.name}" created successfully with {actual_count} traces.',
             )
 
         return redirect("datasets:detail", dataset_uid=dataset.uid)
@@ -136,9 +135,7 @@ def dataset_detail(request, dataset_uid):
 
     # Ensure the dataset belongs to the current project
     if dataset.project != request.current_project:
-        messages.error(
-            request, "This dataset does not belong to the current project."
-        )
+        messages.error(request, "This dataset does not belong to the current project.")
         return redirect("datasets:list")
 
     # Get all traces for this dataset, ordered by started_at
@@ -167,9 +164,7 @@ def dataset_delete(request, dataset_uid):
 
     # Ensure the dataset belongs to the current project
     if dataset.project != request.current_project:
-        messages.error(
-            request, "This dataset does not belong to the current project."
-        )
+        messages.error(request, "This dataset does not belong to the current project.")
         return redirect("datasets:list")
 
     dataset_name = dataset.name

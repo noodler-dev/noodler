@@ -17,9 +17,11 @@
                 <p class="text-muted">
                     Create a dataset by randomly sampling traces from <strong>{{ current_project.name }}</strong>.
                     {% if available_count > 0 %}
-                        <br>Available traces: <strong>{{ available_count }}</strong>
+                        <br>
+                        Available traces: <strong>{{ available_count }}</strong>
                     {% else %}
-                        <br><span class="text-warning">No traces available in this project.</span>
+                        <br>
+                        <span class="text-warning">No traces available in this project.</span>
                     {% endif %}
                 </p>
                 <form method="post">
@@ -30,7 +32,13 @@
                     </div>
                     <div class="mb-3">
                         <label for="num_traces" class="form-label">Number of Traces</label>
-                        <input type="number" class="form-control" id="num_traces" name="num_traces" min="1" {% if available_count > 0 %}max="{{ available_count }}"{% endif %} required>
+                        <input type="number"
+                               class="form-control"
+                               id="num_traces"
+                               name="num_traces"
+                               min="1"
+                               {% if available_count > 0 %}max="{{ available_count }}"{% endif %}
+                               required>
                         {% if available_count > 0 %}
                             <div class="form-text">Maximum: {{ available_count }} traces</div>
                         {% else %}
@@ -38,7 +46,9 @@
                         {% endif %}
                     </div>
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary" {% if available_count == 0 %}disabled{% endif %}>Create Dataset</button>
+                        <button type="submit"
+                                class="btn btn-primary"
+                                {% if available_count == 0 %}disabled{% endif %}>Create Dataset</button>
                         <a href="{% url 'datasets:list' %}" class="btn btn-secondary">Cancel</a>
                     </div>
                 </form>
@@ -46,4 +56,3 @@
         </div>
     </div>
 {% endblock %}
-

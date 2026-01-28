@@ -9,4 +9,3 @@ urlpatterns = [
     path("<uuid:dataset_uid>/", views.dataset_detail, name="detail"),
     path("<uuid:dataset_uid>/delete/", views.dataset_delete, name="delete"),
 ]
-

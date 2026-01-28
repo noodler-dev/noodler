@@ -4,15 +4,17 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('accounts', '0007_organization_is_default'),
+        ("accounts", "0007_organization_is_default"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='organization',
-            name='is_default',
-            field=models.BooleanField(default=False, help_text='Indicates if this is the default organization automatically created for a user on signup. Default organizations cannot be deleted.'),
+            model_name="organization",
+            name="is_default",
+            field=models.BooleanField(
+                default=False,
+                help_text="Indicates if this is the default organization automatically created for a user on signup. Default organizations cannot be deleted.",
+            ),
         ),
     ]
