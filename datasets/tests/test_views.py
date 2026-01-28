@@ -48,8 +48,8 @@ class DatasetListViewTests(TestCase):
         session.save()
 
         # Create datasets
-        dataset1 = Dataset.objects.create(name="Dataset 1", project=self.project)
-        dataset2 = Dataset.objects.create(name="Dataset 2", project=self.project)
+        Dataset.objects.create(name="Dataset 1", project=self.project)
+        Dataset.objects.create(name="Dataset 2", project=self.project)
 
         response = self.client.get(self.list_url)
         self.assertEqual(response.status_code, 200)
