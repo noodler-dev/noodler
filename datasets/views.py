@@ -4,6 +4,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_http_methods, require_POST
 from projects.decorators import require_project_access
 from .models import Dataset
+from .forms import DatasetCreateForm
 from .utils import create_dataset_from_traces
 
 
@@ -34,77 +35,33 @@ def dataset_create(request):
     available_count = request.current_project.get_available_trace_count()
 
     if request.method == "POST":
-        name = request.POST.get("name", "").strip()
-        num_traces_str = request.POST.get("num_traces", "").strip()
+        form = DatasetCreateForm(request.POST, available_count=available_count)
+        if form.is_valid():
+            name = form.cleaned_data["name"]
+            num_traces = form.cleaned_data["num_traces"]
 
-        if not name:
-            messages.error(request, "Dataset name is required.")
-            return render(
-                request,
-                "datasets/new.html",
-                {
-                    "current_project": request.current_project,
-                    "available_count": available_count,
-                },
+            # Create the dataset
+            result = create_dataset_from_traces(
+                request.current_project, name, num_traces
             )
 
-        if not num_traces_str:
-            messages.error(request, "Number of traces is required.")
-            return render(
-                request,
-                "datasets/new.html",
-                {
-                    "current_project": request.current_project,
-                    "available_count": available_count,
-                },
-            )
+            if result.was_truncated:
+                messages.warning(
+                    request,
+                    f"Dataset created with {result.actual_count} traces (requested {result.requested_count}, but only {result.available_count} available).",
+                )
+            else:
+                messages.success(
+                    request,
+                    f'Dataset "{result.dataset.name}" created successfully with {result.actual_count} traces.',
+                )
 
-        try:
-            num_traces = int(num_traces_str)
-            if num_traces <= 0:
-                raise ValueError("Number must be positive")
-        except ValueError:
-            messages.error(request, "Number of traces must be a positive integer.")
-            return render(
-                request,
-                "datasets/new.html",
-                {
-                    "current_project": request.current_project,
-                    "available_count": available_count,
-                },
-            )
-
-        if available_count == 0:
-            messages.error(
-                request,
-                "No traces available in this project. Please add traces before creating a dataset.",
-            )
-            return render(
-                request,
-                "datasets/new.html",
-                {
-                    "current_project": request.current_project,
-                    "available_count": available_count,
-                },
-            )
-
-        # Create the dataset
-        result = create_dataset_from_traces(request.current_project, name, num_traces)
-
-        if result.was_truncated:
-            messages.warning(
-                request,
-                f"Dataset created with {result.actual_count} traces (requested {result.requested_count}, but only {result.available_count} available).",
-            )
-        else:
-            messages.success(
-                request,
-                f'Dataset "{result.dataset.name}" created successfully with {result.actual_count} traces.',
-            )
-
-        return redirect("datasets:detail", dataset_uid=result.dataset.uid)
+            return redirect("datasets:detail", dataset_uid=result.dataset.uid)
+    else:
+        form = DatasetCreateForm(available_count=available_count)
 
     context = {
+        "form": form,
         "current_project": request.current_project,
         "available_count": available_count,
     }

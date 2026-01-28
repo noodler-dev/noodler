@@ -27,24 +27,23 @@
                 <form method="post">
                     {% csrf_token %}
                     <div class="mb-3">
-                        <label for="name" class="form-label">Dataset Name</label>
-                        <input type="text" class="form-control" id="name" name="name" required>
+                        <label for="{{ form.name.id_for_label }}" class="form-label">Dataset Name</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}<div class="text-danger small">{{ form.name.errors }}</div>{% endif %}
+                        {% if form.name.help_text %}<div class="form-text">{{ form.name.help_text }}</div>{% endif %}
                     </div>
                     <div class="mb-3">
-                        <label for="num_traces" class="form-label">Number of Traces</label>
-                        <input type="number"
-                               class="form-control"
-                               id="num_traces"
-                               name="num_traces"
-                               min="1"
-                               {% if available_count > 0 %}max="{{ available_count }}"{% endif %}
-                               required>
+                        <label for="{{ form.num_traces.id_for_label }}" class="form-label">Number of Traces</label>
+                        {{ form.num_traces }}
+                        {% if form.num_traces.errors %}<div class="text-danger small">{{ form.num_traces.errors }}</div>{% endif %}
+                        {% if form.num_traces.help_text %}<div class="form-text">{{ form.num_traces.help_text }}</div>{% endif %}
                         {% if available_count > 0 %}
                             <div class="form-text">Maximum: {{ available_count }} traces</div>
                         {% else %}
                             <div class="form-text text-warning">No traces available in this project.</div>
                         {% endif %}
                     </div>
+                    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
                     <div class="d-flex gap-2">
                         <button type="submit"
                                 class="btn btn-primary"
