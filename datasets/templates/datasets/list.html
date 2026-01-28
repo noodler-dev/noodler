@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Datasets{% endblock %}
+{% block content %}
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1>Datasets</h1>
+                <p class="text-muted mb-0">
+                    Showing datasets for <strong>{{ current_project.name }}</strong>
+                    <a href="{% url 'projects:list' %}" class="ms-2">Switch Project</a>
+                </p>
+            </div>
+            <div>
+                <a href="{% url 'datasets:create' %}" class="btn btn-primary">Create Dataset</a>
+            </div>
+        </div>
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show"
+                     role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+        {% if datasets_with_counts %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Traces</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in datasets_with_counts %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.dataset.name }}</strong>
+                                </td>
+                                <td>{{ item.trace_count }}</td>
+                                <td>{{ item.dataset.created_at|date:"M d, Y H:i:s" }}</td>
+                                <td>
+                                    <a href="{% url 'datasets:detail' item.dataset.uid %}"
+                                       class="btn btn-sm btn-primary">View</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <p class="mb-0">No datasets found. <a href="{% url 'datasets:create' %}">Create your first dataset</a> to get started with error analysis.</p>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
+
