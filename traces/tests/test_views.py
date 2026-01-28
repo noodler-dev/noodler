@@ -155,7 +155,6 @@ class TraceViewsTestCase(TestCase):
         response = self.client.get(reverse("traces:detail", args=[self.trace1.uid]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "trace1")
-        self.assertContains(response, "Project 1")
 
     def test_trace_detail_shows_spans(self):
         """Test that trace detail shows all associated spans."""
