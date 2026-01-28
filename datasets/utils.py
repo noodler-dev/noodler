@@ -1,5 +1,21 @@
+from dataclasses import dataclass
 from .models import Dataset
 from traces.models import Trace
+
+
+@dataclass
+class DatasetCreationResult:
+    """Result object returned from dataset creation."""
+
+    dataset: Dataset
+    requested_count: int
+    actual_count: int
+    available_count: int
+
+    @property
+    def was_truncated(self):
+        """Check if fewer traces were sampled than requested."""
+        return self.actual_count < self.requested_count
 
 
 def create_dataset_from_traces(project, name, num_traces):
@@ -12,7 +28,7 @@ def create_dataset_from_traces(project, name, num_traces):
         num_traces: Number of traces to randomly sample
 
     Returns:
-        Dataset instance with associated traces
+        DatasetCreationResult containing the dataset and metadata
     """
     # Get available traces for the project
     available_traces = Trace.objects.filter(project=project)
@@ -30,4 +46,9 @@ def create_dataset_from_traces(project, name, num_traces):
     # Associate traces via M2M
     dataset.traces.set(sampled_traces)
 
-    return dataset
+    return DatasetCreationResult(
+        dataset=dataset,
+        requested_count=num_traces,
+        actual_count=actual_num_traces,
+        available_count=available_count,
+    )

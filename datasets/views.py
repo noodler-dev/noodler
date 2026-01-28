@@ -3,7 +3,6 @@ from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_http_methods, require_POST
 from projects.decorators import require_project_access
-from traces.models import Trace
 from .models import Dataset
 from .utils import create_dataset_from_traces
 
@@ -12,20 +11,12 @@ from .utils import create_dataset_from_traces
 @require_project_access(require_current_project=True)
 def dataset_list(request):
     """List all datasets for the current project."""
-    datasets = Dataset.objects.filter(project=request.current_project).order_by(
-        "-created_at"
-    )
+    datasets = Dataset.objects.filter(project=request.current_project)
 
     # Add trace count to each dataset
-    datasets_with_counts = []
-    for dataset in datasets:
-        trace_count = dataset.traces.count()
-        datasets_with_counts.append(
-            {
-                "dataset": dataset,
-                "trace_count": trace_count,
-            }
-        )
+    datasets_with_counts = [
+        {"dataset": dataset, "trace_count": dataset.trace_count} for dataset in datasets
+    ]
 
     context = {
         "datasets_with_counts": datasets_with_counts,
@@ -40,8 +31,7 @@ def dataset_list(request):
 def dataset_create(request):
     """Create a new dataset by randomly sampling traces."""
     # Get available trace count for the project
-    available_traces = Trace.objects.filter(project=request.current_project)
-    available_count = available_traces.count()
+    available_count = request.current_project.get_available_trace_count()
 
     if request.method == "POST":
         name = request.POST.get("name", "").strip()
@@ -99,21 +89,20 @@ def dataset_create(request):
             )
 
         # Create the dataset
-        dataset = create_dataset_from_traces(request.current_project, name, num_traces)
+        result = create_dataset_from_traces(request.current_project, name, num_traces)
 
-        actual_count = dataset.traces.count()
-        if actual_count < num_traces:
+        if result.was_truncated:
             messages.warning(
                 request,
-                f"Dataset created with {actual_count} traces (requested {num_traces}, but only {available_count} available).",
+                f"Dataset created with {result.actual_count} traces (requested {result.requested_count}, but only {result.available_count} available).",
             )
         else:
             messages.success(
                 request,
-                f'Dataset "{dataset.name}" created successfully with {actual_count} traces.',
+                f'Dataset "{result.dataset.name}" created successfully with {result.actual_count} traces.',
             )
 
-        return redirect("datasets:detail", dataset_uid=dataset.uid)
+        return redirect("datasets:detail", dataset_uid=result.dataset.uid)
 
     context = {
         "current_project": request.current_project,
@@ -134,17 +123,17 @@ def dataset_detail(request, dataset_uid):
         return redirect("projects:list")
 
     # Ensure the dataset belongs to the current project
-    if dataset.project != request.current_project:
+    if not dataset.belongs_to_project(request.current_project):
         messages.error(request, "This dataset does not belong to the current project.")
         return redirect("datasets:list")
 
     # Get all traces for this dataset, ordered by started_at
-    traces = dataset.traces.all().order_by("-started_at")
+    traces = dataset.get_traces_ordered()
 
     context = {
         "dataset": dataset,
         "traces": traces,
-        "trace_count": traces.count(),
+        "trace_count": dataset.trace_count,
         "current_project": request.current_project,
     }
     return render(request, "datasets/detail.html", context)
@@ -163,7 +152,7 @@ def dataset_delete(request, dataset_uid):
         return redirect("projects:list")
 
     # Ensure the dataset belongs to the current project
-    if dataset.project != request.current_project:
+    if not dataset.belongs_to_project(request.current_project):
         messages.error(request, "This dataset does not belong to the current project.")
         return redirect("datasets:list")
 

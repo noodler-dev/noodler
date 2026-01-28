@@ -17,5 +17,18 @@ class Dataset(models.Model):
     def __str__(self):
         return self.name
 
+    @property
+    def trace_count(self):
+        """Return the number of traces in this dataset."""
+        return self.traces.count()
+
+    def get_traces_ordered(self, order_by="-started_at"):
+        """Get traces ordered by the specified field."""
+        return self.traces.all().order_by(order_by)
+
+    def belongs_to_project(self, project):
+        """Check if this dataset belongs to the given project."""
+        return self.project == project
+
     class Meta:
         ordering = ["-created_at"]

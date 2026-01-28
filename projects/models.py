@@ -12,6 +12,12 @@ class Project(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def get_available_trace_count(self):
+        """Get the count of available traces for this project."""
+        from traces.models import Trace
+
+        return Trace.objects.filter(project=self).count()
+
     def __str__(self):
         return self.name
 
