@@ -197,18 +197,11 @@ def annotation_view(request, dataset_uid, trace_uid):
     # Extract conversation messages
     conversation_messages = extract_conversation_messages(spans)
 
-    # Get available failure modes for the project
-    available_failure_modes = FailureMode.objects.filter(
-        project=dataset.project
-    ).order_by("name")
-
     context = {
         "dataset": dataset,
         "trace": trace,
         "conversation_messages": conversation_messages,
         "form": form,
-        "annotation": annotation,
-        "available_failure_modes": available_failure_modes,
         "current_project": request.current_project,
         **progress,  # Unpack progress dict
         **navigation,  # Unpack navigation dict
