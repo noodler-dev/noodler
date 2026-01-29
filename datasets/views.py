@@ -206,9 +206,9 @@ def annotation_view(request, dataset_uid, trace_uid):
     if request.method == "POST":
         form = AnnotationForm(request.POST)
         if form.is_valid():
-            notes = form.cleaned_data["notes"]
+            notes = form.cleaned_data.get("notes", "").strip()
 
-            # Get or create annotation
+            # Get or create annotation with notes (even if empty, marks trace as reviewed)
             annotation, created = Annotation.objects.get_or_create(
                 trace=trace, dataset=dataset, defaults={"notes": notes}
             )
@@ -218,7 +218,10 @@ def annotation_view(request, dataset_uid, trace_uid):
                 annotation.notes = notes
                 annotation.save()
 
-            messages.success(request, "Annotation saved successfully.")
+            if notes:
+                messages.success(request, "Annotation saved successfully.")
+            else:
+                messages.success(request, "Trace marked as reviewed.")
 
             # Redirect to next trace or back to dataset detail
             if next_trace_uid:

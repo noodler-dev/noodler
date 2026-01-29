@@ -113,23 +113,18 @@
                                 {% if form.notes.help_text %}<small class="form-text text-muted">{{ form.notes.help_text }}</small>{% endif %}
                                 {% if form.notes.errors %}<div class="text-danger">{{ form.notes.errors }}</div>{% endif %}
                             </div>
-                            <div class="d-flex flex-column gap-2">
-                                <div class="d-flex justify-content-between">
-                                    {% if prev_trace_uid %}
-                                        <a href="{% url 'datasets:annotate' dataset.uid prev_trace_uid %}"
-                                           class="btn btn-outline-secondary">← Previous</a>
-                                    {% else %}
-                                        <button type="button" class="btn btn-outline-secondary" disabled>← Previous</button>
-                                    {% endif %}
-                                    {% if next_trace_uid %}
-                                        <a href="{% url 'datasets:annotate' dataset.uid next_trace_uid %}"
-                                           class="btn btn-outline-primary">Skip → Next</a>
-                                    {% else %}
-                                        <a href="{% url 'datasets:detail' dataset.uid %}"
-                                           class="btn btn-outline-primary">Finish</a>
-                                    {% endif %}
-                                </div>
-                                <button type="submit" class="btn btn-primary w-100">Save & Continue</button>
+                            <div class="d-flex justify-content-between">
+                                {% if prev_trace_uid %}
+                                    <a href="{% url 'datasets:annotate' dataset.uid prev_trace_uid %}"
+                                       class="btn btn-outline-secondary">← Previous</a>
+                                {% else %}
+                                    <button type="button" class="btn btn-outline-secondary" disabled>← Previous</button>
+                                {% endif %}
+                                {% if next_trace_uid %}
+                                    <button type="submit" class="btn btn-primary">Next →</button>
+                                {% else %}
+                                    <button type="submit" class="btn btn-primary">Finish</button>
+                                {% endif %}
                             </div>
                         </form>
                     </div>

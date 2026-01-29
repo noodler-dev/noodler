@@ -55,5 +55,4 @@ class AnnotationForm(forms.Form):
                 "placeholder": "Enter your notes about what needs improvement, fixing, or avoiding...",
             }
         ),
-        help_text="Describe what went wrong, what needs improvement, or what should be avoided.",
     )
