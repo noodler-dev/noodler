@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Categories: {{ dataset.name }}{% endblock %}
+{% block content %}
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1>Failure Mode Categories</h1>
+                <p class="text-muted mb-0">
+                    Dataset: <strong>{{ dataset.name }}</strong>
+                </p>
+            </div>
+            <div>
+                <a href="{% url 'datasets:category_create' dataset.uid %}"
+                   class="btn btn-primary me-2">Create New Category</a>
+                <a href="{% url 'datasets:detail' dataset.uid %}"
+                   class="btn btn-outline-secondary">Back to Dataset</a>
+            </div>
+        </div>
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show"
+                     role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+        <!-- Categories List -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Categories</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if failure_modes_with_counts %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Description</th>
+                                            <th>Annotations</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in failure_modes_with_counts %}
+                                            <tr>
+                                                <td>
+                                                    <strong>{{ item.failure_mode.name }}</strong>
+                                                </td>
+                                                <td>
+                                                    {% if item.failure_mode.description %}
+                                                        {{ item.failure_mode.description }}
+                                                    {% else %}
+                                                        <span class="text-muted">No description</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-info">{{ item.count }}</span>
+                                                </td>
+                                                <td>
+                                                    <a href="{% url 'datasets:category_edit' dataset.uid item.failure_mode.uid %}"
+                                                       class="btn btn-sm btn-outline-primary me-2">Edit</a>
+                                                    <form method="post"
+                                                          action="{% url 'datasets:category_delete' dataset.uid item.failure_mode.uid %}"
+                                                          class="d-inline"
+                                                          onsubmit="return confirm('Are you sure you want to delete this category? This will remove all associations with annotations.');">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-muted mb-0">No categories yet. Create one or generate categories from annotations.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
