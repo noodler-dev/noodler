@@ -8,4 +8,9 @@ urlpatterns = [
     path("new/", views.dataset_create, name="create"),
     path("<uuid:dataset_uid>/", views.dataset_detail, name="detail"),
     path("<uuid:dataset_uid>/delete/", views.dataset_delete, name="delete"),
+    path(
+        "<uuid:dataset_uid>/annotate/<uuid:trace_uid>/",
+        views.annotation_view,
+        name="annotate",
+    ),
 ]

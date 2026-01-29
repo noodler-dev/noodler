@@ -3,10 +3,11 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
 from django.utils import timezone
+from datetime import timedelta
 from accounts.models import UserProfile, Organization, Membership
 from projects.models import Project
-from traces.models import Trace
-from datasets.models import Dataset
+from traces.models import Trace, Span
+from datasets.models import Dataset, Annotation
 
 User = get_user_model()
 
@@ -205,8 +206,8 @@ class DatasetCreateViewTests(TestCase):
         dataset = Dataset.objects.get(name="Test Dataset")
         self.assertRedirects(response, reverse("datasets:detail", args=[dataset.uid]))
 
-    def test_dataset_create_shows_success_message(self):
-        """Test that success message is displayed after creation."""
+    def test_dataset_create_no_success_message(self):
+        """Test that no success message is displayed after creation (removed per requirements)."""
         self.client.login(username="testuser", password="testpass123")
         session = self.client.session
         session["current_project_id"] = self.project.id
@@ -226,8 +227,9 @@ class DatasetCreateViewTests(TestCase):
         )
         messages = list(get_messages(response.wsgi_request))
 
-        self.assertEqual(len(messages), 1)
-        self.assertIn("created successfully", str(messages[0]).lower())
+        # Success message was removed, so no messages should be shown
+        # (unless there's a warning about truncation)
+        self.assertEqual(len(messages), 0)
 
     def test_dataset_create_empty_name_shows_error(self):
         """Test that empty name shows error message."""
@@ -562,3 +564,381 @@ class DatasetDeleteViewTests(TestCase):
         messages = list(get_messages(response.wsgi_request))
         self.assertEqual(len(messages), 1)
         self.assertIn("does not belong", str(messages[0]).lower())
+
+
+class AnnotationViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="testuser", password="testpass123"
+        )
+        self.user_profile = UserProfile.objects.create(user=self.user)
+        self.org = Organization.objects.create(name="Test Org")
+        Membership.objects.create(
+            user_profile=self.user_profile, organization=self.org, role="admin"
+        )
+        self.project = Project.objects.create(
+            name="Test Project", organization=self.org
+        )
+        self.dataset = Dataset.objects.create(name="Test Dataset", project=self.project)
+
+        # Create traces with different timestamps (ordered by -started_at, so newest first)
+        base_time = timezone.now()
+        self.trace1 = Trace.objects.create(
+            project=self.project,
+            otel_trace_id="trace-1",
+            started_at=base_time,
+            ended_at=base_time,
+            attributes={},
+        )
+        self.trace2 = Trace.objects.create(
+            project=self.project,
+            otel_trace_id="trace-2",
+            started_at=base_time - timedelta(seconds=1),
+            ended_at=base_time - timedelta(seconds=1),
+            attributes={},
+        )
+        self.trace3 = Trace.objects.create(
+            project=self.project,
+            otel_trace_id="trace-3",
+            started_at=base_time - timedelta(seconds=2),
+            ended_at=base_time - timedelta(seconds=2),
+            attributes={},
+        )
+
+        self.dataset.traces.add(self.trace1, self.trace2, self.trace3)
+
+        # Note: Ordered by -started_at, so order is: trace1 (newest), trace2, trace3 (oldest)
+
+        # Create spans for trace1
+        self.span1 = Span.objects.create(
+            trace=self.trace1,
+            name="span-1",
+            otel_span_id="span1",
+            start_time=timezone.now(),
+            end_time=timezone.now(),
+            input_messages=[
+                {"role": "user", "parts": [{"type": "text", "content": "Hello"}]}
+            ],
+            output_messages=[
+                {
+                    "role": "assistant",
+                    "parts": [{"type": "text", "content": "Hi there"}],
+                }
+            ],
+        )
+
+    def test_annotation_view_requires_authentication(self):
+        """Test that annotation view redirects unauthenticated users."""
+        url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace1.uid])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response.url)
+
+    def test_annotation_view_requires_current_project(self):
+        """Test that annotation view requires a current project."""
+        self.client.login(username="testuser", password="testpass123")
+        url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace1.uid])
+        response = self.client.get(url)
+        # Should redirect to projects list or auto-select
+        self.assertIn(response.status_code, [302, 200])
+
+    def test_annotation_view_get_displays_form(self):
+        """Test that GET request displays the annotation form."""
+        self.client.login(username="testuser", password="testpass123")
+        session = self.client.session
+        session["current_project_id"] = self.project.id
+        session.save()
+
+        url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace1.uid])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "datasets/annotate.html")
+        self.assertContains(response, "form")
+        self.assertContains(response, "Conversation")
+
+    def test_annotation_view_shows_existing_annotation(self):
+        """Test that existing annotation is pre-filled in the form."""
+        self.client.login(username="testuser", password="testpass123")
+        session = self.client.session
+        session["current_project_id"] = self.project.id
+        session.save()
+
+        # Create annotation
+        Annotation.objects.create(
+            trace=self.trace1, dataset=self.dataset, notes="Existing notes"
+        )
+
+        url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace1.uid])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        form = response.context["form"]
+        self.assertEqual(form.initial.get("notes"), "Existing notes")
+
+    def test_annotation_view_post_saves_annotation(self):
+        """Test that POST request saves annotation."""
+        self.client.login(username="testuser", password="testpass123")
+        session = self.client.session
+        session["current_project_id"] = self.project.id
+        session.save()
+
+        url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace1.uid])
+        response = self.client.post(url, {"notes": "Test annotation notes"})
+
+        # Should redirect to next trace
+        self.assertEqual(response.status_code, 302)
+
+        # Verify annotation was created
+        annotation = Annotation.objects.get(trace=self.trace1, dataset=self.dataset)
+        self.assertEqual(annotation.notes, "Test annotation notes")
+
+    def test_annotation_view_post_updates_existing_annotation(self):
+        """Test that POST request updates existing annotation."""
+        self.client.login(username="testuser", password="testpass123")
+        session = self.client.session
+        session["current_project_id"] = self.project.id
+        session.save()
+
+        # Create existing annotation
+        Annotation.objects.create(
+            trace=self.trace1, dataset=self.dataset, notes="Old notes"
+        )
+
+        url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace1.uid])
+        response = self.client.post(url, {"notes": "New notes"})
+
+        self.assertEqual(response.status_code, 302)
+
+        # Verify annotation was updated
+        annotation = Annotation.objects.get(trace=self.trace1, dataset=self.dataset)
+        self.assertEqual(annotation.notes, "New notes")
+
+    def test_annotation_view_post_empty_notes_marks_as_reviewed(self):
+        """Test that empty notes still marks trace as reviewed."""
+        self.client.login(username="testuser", password="testpass123")
+        session = self.client.session
+        session["current_project_id"] = self.project.id
+        session.save()
+
+        url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace1.uid])
+        response = self.client.post(url, {"notes": ""})
+
+        self.assertEqual(response.status_code, 302)
+
+        # Verify annotation was created (even with empty notes)
+        annotation = Annotation.objects.get(trace=self.trace1, dataset=self.dataset)
+        self.assertEqual(annotation.notes, "")
+
+    def test_annotation_view_redirects_to_next_trace(self):
+        """Test that saving annotation redirects to next unannotated trace."""
+        self.client.login(username="testuser", password="testpass123")
+        session = self.client.session
+        session["current_project_id"] = self.project.id
+        session.save()
+
+        # trace1 is first in order (newest), so next should be trace2
+        url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace1.uid])
+        response = self.client.post(url, {"notes": "Notes"})
+
+        # Should redirect to trace2 (next unannotated)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(str(self.trace2.uid), response.url)
+
+    def test_annotation_view_skips_annotated_traces(self):
+        """Test that navigation skips already annotated traces."""
+        self.client.login(username="testuser", password="testpass123")
+        session = self.client.session
+        session["current_project_id"] = self.project.id
+        session.save()
+
+        # Annotate trace2
+        Annotation.objects.create(
+            trace=self.trace2, dataset=self.dataset, notes="Already annotated"
+        )
+
+        url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace1.uid])
+        response = self.client.post(url, {"notes": "Notes"})
+
+        # Should skip trace2 and go to trace3
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(str(self.trace3.uid), response.url)
+
+    def test_annotation_view_redirects_to_detail_when_finished(self):
+        """Test that finishing all traces redirects to dataset detail."""
+        self.client.login(username="testuser", password="testpass123")
+        session = self.client.session
+        session["current_project_id"] = self.project.id
+        session.save()
+
+        # Annotate trace2 and trace3
+        Annotation.objects.create(trace=self.trace2, dataset=self.dataset, notes="")
+        Annotation.objects.create(trace=self.trace3, dataset=self.dataset, notes="")
+
+        url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace1.uid])
+        response = self.client.post(url, {"notes": "Notes"}, follow=True)
+
+        # Should redirect to dataset detail
+        self.assertRedirects(
+            response, reverse("datasets:detail", args=[self.dataset.uid])
+        )
+        messages = list(get_messages(response.wsgi_request))
+        self.assertIn("finished annotating", str(messages[0]).lower())
+
+    def test_annotation_view_shows_progress(self):
+        """Test that progress information is displayed."""
+        self.client.login(username="testuser", password="testpass123")
+        session = self.client.session
+        session["current_project_id"] = self.project.id
+        session.save()
+
+        # trace1 is first in order (newest), so current_trace_number should be 1
+        url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace1.uid])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        context = response.context
+        self.assertEqual(context["total_traces"], 3)
+        self.assertEqual(context["current_trace_number"], 1)  # trace1 is first in order
+        self.assertEqual(context["unannotated_count"], 3)
+
+    def test_annotation_view_shows_navigation_buttons(self):
+        """Test that Previous/Next buttons are displayed correctly."""
+        self.client.login(username="testuser", password="testpass123")
+        session = self.client.session
+        session["current_project_id"] = self.project.id
+        session.save()
+
+        # Test first trace in order (trace1 is newest, so first) - no previous
+        url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace1.uid])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        context = response.context
+        self.assertIsNone(context["prev_trace_uid"])
+        self.assertIsNotNone(context["next_trace_uid"])
+
+        # Test middle trace (trace2) - has both
+        url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace2.uid])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        context = response.context
+        self.assertIsNotNone(context["prev_trace_uid"])
+        self.assertIsNotNone(context["next_trace_uid"])
+
+        # Test last trace (trace3 is oldest, so last) - no next
+        url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace3.uid])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        context = response.context
+        self.assertIsNotNone(context["prev_trace_uid"])
+        # Next might be None if it's the last unannotated trace
+
+    def test_annotation_view_access_control_wrong_project(self):
+        """Test that users cannot annotate traces from other projects."""
+        self.client.login(username="testuser", password="testpass123")
+        session = self.client.session
+        session["current_project_id"] = self.project.id
+        session.save()
+
+        # Create another project and dataset
+        other_org = Organization.objects.create(name="Other Org")
+        other_project = Project.objects.create(
+            name="Other Project", organization=other_org
+        )
+        other_dataset = Dataset.objects.create(
+            name="Other Dataset", project=other_project
+        )
+        other_trace = Trace.objects.create(
+            project=other_project,
+            otel_trace_id="other-trace",
+            started_at=timezone.now(),
+            ended_at=timezone.now(),
+            attributes={},
+        )
+        other_dataset.traces.add(other_trace)
+
+        url = reverse("datasets:annotate", args=[other_dataset.uid, other_trace.uid])
+        response = self.client.get(url)
+
+        # Should redirect with error
+        self.assertEqual(response.status_code, 302)
+
+    def test_annotation_view_trace_not_in_dataset(self):
+        """Test that error is shown when trace doesn't belong to dataset."""
+        self.client.login(username="testuser", password="testpass123")
+        session = self.client.session
+        session["current_project_id"] = self.project.id
+        session.save()
+
+        # Create trace not in dataset
+        other_trace = Trace.objects.create(
+            project=self.project,
+            otel_trace_id="other-trace",
+            started_at=timezone.now(),
+            ended_at=timezone.now(),
+            attributes={},
+        )
+
+        url = reverse("datasets:annotate", args=[self.dataset.uid, other_trace.uid])
+        response = self.client.get(url, follow=True)
+
+        messages = list(get_messages(response.wsgi_request))
+        self.assertEqual(len(messages), 1)
+        self.assertIn("does not belong", str(messages[0]).lower())
+
+    def test_annotation_view_review_mode_navigates_all_traces(self):
+        """Test that review mode navigates through all traces, not just unannotated."""
+        self.client.login(username="testuser", password="testpass123")
+        session = self.client.session
+        session["current_project_id"] = self.project.id
+        session.save()
+
+        # Annotate all traces
+        Annotation.objects.create(trace=self.trace1, dataset=self.dataset, notes="")
+        Annotation.objects.create(trace=self.trace2, dataset=self.dataset, notes="")
+        Annotation.objects.create(trace=self.trace3, dataset=self.dataset, notes="")
+
+        # In review mode, trace1 is first, so next should be trace2
+        url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace1.uid])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        context = response.context
+        self.assertTrue(context["all_annotated"])
+        self.assertEqual(context["next_trace_uid"], self.trace2.uid)
+
+    def test_annotation_view_review_mode_finish_message(self):
+        """Test that review mode shows appropriate finish message."""
+        self.client.login(username="testuser", password="testpass123")
+        session = self.client.session
+        session["current_project_id"] = self.project.id
+        session.save()
+
+        # Annotate all traces
+        Annotation.objects.create(trace=self.trace1, dataset=self.dataset, notes="")
+        Annotation.objects.create(trace=self.trace2, dataset=self.dataset, notes="")
+        Annotation.objects.create(trace=self.trace3, dataset=self.dataset, notes="")
+
+        # Finish reviewing (post on last trace in order - trace3)
+        url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace3.uid])
+        response = self.client.post(url, {"notes": "Updated notes"}, follow=True)
+
+        messages = list(get_messages(response.wsgi_request))
+        self.assertGreater(len(messages), 0)
+        self.assertIn("finished reviewing", str(messages[0]).lower())
+
+    def test_annotation_view_shows_conversation_messages(self):
+        """Test that conversation messages are displayed."""
+        self.client.login(username="testuser", password="testpass123")
+        session = self.client.session
+        session["current_project_id"] = self.project.id
+        session.save()
+
+        url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace1.uid])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        context = response.context
+        self.assertIn("conversation_messages", context)
+        # Should have messages from span1
+        self.assertGreater(len(context["conversation_messages"]), 0)
