@@ -13,4 +13,29 @@ urlpatterns = [
         views.annotation_view,
         name="annotate",
     ),
+    path(
+        "<uuid:dataset_uid>/categorize/",
+        views.categorize_dataset,
+        name="categorize",
+    ),
+    path(
+        "<uuid:dataset_uid>/categories/",
+        views.category_list,
+        name="categories",
+    ),
+    path(
+        "<uuid:dataset_uid>/categories/new/",
+        views.category_create,
+        name="category_create",
+    ),
+    path(
+        "<uuid:dataset_uid>/categories/<uuid:category_uid>/edit/",
+        views.category_edit,
+        name="category_edit",
+    ),
+    path(
+        "<uuid:dataset_uid>/categories/<uuid:category_uid>/delete/",
+        views.category_delete,
+        name="category_delete",
+    ),
 ]

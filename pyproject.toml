@@ -9,6 +9,7 @@ dependencies = [
     "django>=6.0",
     "djangorestframework>=3.16.1",
     "opentelemetry-proto>=1.39.1",
+    "openai>=1.0.0",
     "protobuf>=6.33.2",
 ]
 

@@ -171,6 +171,30 @@ class Dataset(models.Model):
         ordering = ["-created_at"]
 
 
+class FailureMode(models.Model):
+    """Failure mode category for categorizing annotations."""
+
+    uid = models.UUIDField(
+        default=uuid.uuid4, editable=False, unique=True, db_index=True
+    )
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="failure_modes")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+    def belongs_to_project(self, project):
+        """Check if this failure mode belongs to the given project."""
+        return self.project == project
+
+    class Meta:
+        ordering = ["name"]
+        unique_together = [["name", "project"]]
+
+
 class Annotation(models.Model):
     """Annotation for a trace within a dataset context."""
 
@@ -184,6 +208,9 @@ class Annotation(models.Model):
         Dataset, on_delete=models.CASCADE, related_name="annotations"
     )
     notes = models.TextField(blank=True)
+    failure_modes = models.ManyToManyField(
+        FailureMode, related_name="annotations", blank=True
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -197,6 +224,10 @@ class Annotation(models.Model):
             return cls.objects.get(trace=trace, dataset=dataset)
         except cls.DoesNotExist:
             return None
+
+    def get_failure_modes(self):
+        """Get associated failure modes for this annotation."""
+        return self.failure_modes.all()
 
     @classmethod
     def save_notes(cls, trace, dataset, notes):

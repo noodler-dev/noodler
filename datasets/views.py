@@ -1,13 +1,18 @@
+import logging
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_http_methods, require_POST
+from django.db import transaction
 from projects.decorators import require_project_access
 from traces.models import Trace, Span
 from traces.utils import extract_conversation_messages
-from .models import Dataset, Annotation
-from .forms import DatasetCreateForm, AnnotationForm
+from .models import Dataset, Annotation, FailureMode
+from .forms import DatasetCreateForm, AnnotationForm, FailureModeForm
 from .utils import create_dataset_from_traces
+from .llm_utils import categorize_annotations
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -83,6 +88,10 @@ def dataset_detail(request, dataset_uid):
     # Get first trace for review mode (when all are annotated)
     first_trace = dataset.get_first_trace() if not first_unannotated_trace else None
 
+    # Get annotations count for categorization
+    annotations_count = Annotation.objects.filter(dataset=dataset).exclude(notes="").count()
+    failure_modes_count = FailureMode.objects.filter(project=dataset.project).count()
+
     context = {
         "dataset": dataset,
         "traces": traces,
@@ -90,6 +99,8 @@ def dataset_detail(request, dataset_uid):
         "first_unannotated_trace": first_unannotated_trace,
         "first_trace": first_trace,
         "unannotated_count": dataset.get_unannotated_count(),
+        "annotations_count": annotations_count,
+        "failure_modes_count": failure_modes_count,
         "current_project": request.current_project,
     }
     return render(request, "datasets/detail.html", context)
@@ -158,12 +169,18 @@ def annotation_view(request, dataset_uid, trace_uid):
     annotation = Annotation.get_for_trace_dataset(trace, dataset)
 
     if request.method == "POST":
-        form = AnnotationForm(request.POST)
+        form = AnnotationForm(
+            request.POST, project=dataset.project
+        )
         if form.is_valid():
             notes = form.cleaned_data.get("notes", "")
+            failure_modes = form.cleaned_data.get("failure_modes", [])
 
             # Save annotation (even if empty, marks trace as reviewed)
-            Annotation.save_notes(trace, dataset, notes)
+            annotation = Annotation.save_notes(trace, dataset, notes)
+
+            # Update failure mode associations
+            annotation.failure_modes.set(failure_modes)
 
             # Redirect to next trace or back to dataset detail
             if navigation["next_trace_uid"]:
@@ -184,9 +201,15 @@ def annotation_view(request, dataset_uid, trace_uid):
     else:
         # GET request - populate form with existing annotation if available
         initial_data = {}
+        initial_failure_modes = None
         if annotation:
             initial_data["notes"] = annotation.notes
-        form = AnnotationForm(initial=initial_data)
+            initial_failure_modes = list(annotation.failure_modes.values_list("id", flat=True))
+        form = AnnotationForm(
+            initial=initial_data,
+            project=dataset.project,
+            initial_failure_modes=initial_failure_modes,
+        )
 
     # Get all spans for this trace, ordered by start_time
     spans = Span.objects.filter(trace=trace).order_by("start_time")
@@ -194,13 +217,265 @@ def annotation_view(request, dataset_uid, trace_uid):
     # Extract conversation messages
     conversation_messages = extract_conversation_messages(spans)
 
+    # Get available failure modes for the project
+    available_failure_modes = FailureMode.objects.filter(
+        project=dataset.project
+    ).order_by("name")
+
     context = {
         "dataset": dataset,
         "trace": trace,
         "conversation_messages": conversation_messages,
         "form": form,
+        "annotation": annotation,
+        "available_failure_modes": available_failure_modes,
         "current_project": request.current_project,
         **progress,  # Unpack progress dict
         **navigation,  # Unpack navigation dict
     }
     return render(request, "datasets/annotate.html", context)
+
+
+@login_required
+@require_project_access(require_current_project=True)
+@require_POST
+def categorize_dataset(request, dataset_uid):
+    """Generate failure mode categories from dataset annotations using LLM."""
+    dataset = get_object_or_404(Dataset, uid=dataset_uid)
+
+    # Check access
+    if dataset.project not in request.user_projects:
+        messages.error(request, "You do not have access to this dataset.")
+        return redirect("projects:list")
+
+    # Ensure the dataset belongs to the current project
+    if not dataset.belongs_to_project(request.current_project):
+        messages.error(request, "This dataset does not belong to the current project.")
+        return redirect("datasets:list")
+
+    # Get all annotations with notes
+    annotations = Annotation.objects.filter(dataset=dataset).exclude(notes="")
+
+    if not annotations.exists():
+        messages.warning(
+            request,
+            "No annotations with notes found. Please annotate some traces first.",
+        )
+        return redirect("datasets:detail", dataset_uid=dataset_uid)
+
+    try:
+        # Call LLM to categorize annotations
+        categories_data = categorize_annotations(list(annotations))
+
+        if not categories_data:
+            messages.warning(
+                request, "No categories were generated. Please try again."
+            )
+            return redirect("datasets:detail", dataset_uid=dataset_uid)
+
+        # Create failure modes and associate with annotations
+        created_count = 0
+        with transaction.atomic():
+            for cat_data in categories_data:
+                name = cat_data["name"]
+                description = cat_data.get("description", "")
+
+                # Get or create failure mode (unique per project)
+                failure_mode, created = FailureMode.objects.get_or_create(
+                    project=dataset.project,
+                    name=name,
+                    defaults={"description": description},
+                )
+
+                if created:
+                    created_count += 1
+                else:
+                    # Update description if it was empty
+                    if not failure_mode.description and description:
+                        failure_mode.description = description
+                        failure_mode.save()
+
+                # Associate with all annotations (simple approach - can be refined)
+                # In a more sophisticated version, we could use LLM to match specific annotations
+                for annotation in annotations:
+                    if failure_mode not in annotation.failure_modes.all():
+                        annotation.failure_modes.add(failure_mode)
+
+        messages.success(
+            request,
+            f"Successfully generated {created_count} new failure mode categories. "
+            f"Total categories: {len(categories_data)}",
+        )
+
+    except ValueError as e:
+        logger.error(f"Error categorizing dataset: {e}")
+        messages.error(
+            request,
+            f"Failed to generate categories: {str(e)}. Please check your OpenAI API key and try again.",
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error categorizing dataset: {e}", exc_info=True)
+        messages.error(
+            request,
+            "An unexpected error occurred while generating categories. Please try again.",
+        )
+
+    return redirect("datasets:detail", dataset_uid=dataset_uid)
+
+
+@login_required
+@require_project_access(require_current_project=True)
+def category_list(request, dataset_uid):
+    """List all failure modes for the dataset's project."""
+    dataset = get_object_or_404(Dataset, uid=dataset_uid)
+
+    # Check access
+    if dataset.project not in request.user_projects:
+        messages.error(request, "You do not have access to this dataset.")
+        return redirect("projects:list")
+
+    # Ensure the dataset belongs to the current project
+    if not dataset.belongs_to_project(request.current_project):
+        messages.error(request, "This dataset does not belong to the current project.")
+        return redirect("datasets:list")
+
+    # Get all failure modes for the project
+    failure_modes = FailureMode.objects.filter(project=dataset.project).order_by("name")
+
+    # Get annotation counts for each failure mode
+    failure_modes_with_counts = []
+    for fm in failure_modes:
+        count = Annotation.objects.filter(
+            dataset=dataset, failure_modes=fm
+        ).count()
+        failure_modes_with_counts.append({"failure_mode": fm, "count": count})
+
+    context = {
+        "dataset": dataset,
+        "failure_modes_with_counts": failure_modes_with_counts,
+        "current_project": request.current_project,
+    }
+    return render(request, "datasets/categories.html", context)
+
+
+@login_required
+@require_project_access(require_current_project=True)
+@require_http_methods(["GET", "POST"])
+def category_create(request, dataset_uid):
+    """Create a new failure mode category."""
+    dataset = get_object_or_404(Dataset, uid=dataset_uid)
+
+    # Check access
+    if dataset.project not in request.user_projects:
+        messages.error(request, "You do not have access to this dataset.")
+        return redirect("projects:list")
+
+    # Ensure the dataset belongs to the current project
+    if not dataset.belongs_to_project(request.current_project):
+        messages.error(request, "This dataset does not belong to the current project.")
+        return redirect("datasets:list")
+
+    if request.method == "POST":
+        form = FailureModeForm(request.POST, project=dataset.project)
+        if form.is_valid():
+            failure_mode = FailureMode.objects.create(
+                project=dataset.project,
+                name=form.cleaned_data["name"],
+                description=form.cleaned_data.get("description", ""),
+            )
+            messages.success(
+                request, f'Failure mode "{failure_mode.name}" created successfully.'
+            )
+            return redirect("datasets:categories", dataset_uid=dataset_uid)
+    else:
+        form = FailureModeForm(project=dataset.project)
+
+    context = {
+        "dataset": dataset,
+        "form": form,
+        "current_project": request.current_project,
+    }
+    return render(request, "datasets/category_form.html", context)
+
+
+@login_required
+@require_project_access(require_current_project=True)
+@require_http_methods(["GET", "POST"])
+def category_edit(request, dataset_uid, category_uid):
+    """Edit an existing failure mode category."""
+    dataset = get_object_or_404(Dataset, uid=dataset_uid)
+    failure_mode = get_object_or_404(FailureMode, uid=category_uid)
+
+    # Check access
+    if dataset.project not in request.user_projects:
+        messages.error(request, "You do not have access to this dataset.")
+        return redirect("projects:list")
+
+    # Ensure the dataset belongs to the current project
+    if not dataset.belongs_to_project(request.current_project):
+        messages.error(request, "This dataset does not belong to the current project.")
+        return redirect("datasets:list")
+
+    # Ensure failure mode belongs to the project
+    if not failure_mode.belongs_to_project(dataset.project):
+        messages.error(
+            request, "This failure mode does not belong to this project."
+        )
+        return redirect("datasets:categories", dataset_uid=dataset_uid)
+
+    if request.method == "POST":
+        form = FailureModeForm(
+            request.POST, project=dataset.project, instance=failure_mode
+        )
+        if form.is_valid():
+            failure_mode.name = form.cleaned_data["name"]
+            failure_mode.description = form.cleaned_data.get("description", "")
+            failure_mode.save()
+            messages.success(
+                request, f'Failure mode "{failure_mode.name}" updated successfully.'
+            )
+            return redirect("datasets:categories", dataset_uid=dataset_uid)
+    else:
+        form = FailureModeForm(project=dataset.project, instance=failure_mode)
+
+    context = {
+        "dataset": dataset,
+        "failure_mode": failure_mode,
+        "form": form,
+        "current_project": request.current_project,
+    }
+    return render(request, "datasets/category_form.html", context)
+
+
+@login_required
+@require_project_access(require_current_project=True)
+@require_POST
+def category_delete(request, dataset_uid, category_uid):
+    """Delete a failure mode category."""
+    dataset = get_object_or_404(Dataset, uid=dataset_uid)
+    failure_mode = get_object_or_404(FailureMode, uid=category_uid)
+
+    # Check access
+    if dataset.project not in request.user_projects:
+        messages.error(request, "You do not have access to this dataset.")
+        return redirect("projects:list")
+
+    # Ensure the dataset belongs to the current project
+    if not dataset.belongs_to_project(request.current_project):
+        messages.error(request, "This dataset does not belong to the current project.")
+        return redirect("datasets:list")
+
+    # Ensure failure mode belongs to the project
+    if not failure_mode.belongs_to_project(dataset.project):
+        messages.error(
+            request, "This failure mode does not belong to this project."
+        )
+        return redirect("datasets:categories", dataset_uid=dataset_uid)
+
+    failure_mode_name = failure_mode.name
+    failure_mode.delete()
+
+    messages.success(
+        request, f'Failure mode "{failure_mode_name}" deleted successfully.'
+    )
+    return redirect("datasets:categories", dataset_uid=dataset_uid)
