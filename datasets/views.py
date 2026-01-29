@@ -218,22 +218,28 @@ def categorize_dataset(request, dataset_uid):
     if error_response:
         return error_response
 
-    # Get all annotations with notes
-    annotations = Annotation.objects.filter(dataset=dataset).exclude(notes="")
+    # Get annotations with non-whitespace notes (same criteria as categorize_annotations)
+    all_annotations = Annotation.objects.filter(dataset=dataset)
+    annotations_with_content = [
+        a for a in all_annotations if a.notes and a.notes.strip()
+    ]
 
-    if not annotations.exists():
+    if not annotations_with_content:
         messages.warning(
             request,
-            "No annotations with notes found. Please annotate some traces first.",
+            "No annotations with notes found. Please add notes to your annotations first.",
         )
         return redirect("datasets:detail", dataset_uid=dataset_uid)
 
     try:
         # Call LLM to categorize annotations
-        categories_data = categorize_annotations(list(annotations))
+        categories_data = categorize_annotations(annotations_with_content)
 
         if not categories_data:
-            messages.warning(request, "No categories were generated. Please try again.")
+            messages.warning(
+                request,
+                "No categories were generated from the annotations. Please try again.",
+            )
             return redirect("datasets:detail", dataset_uid=dataset_uid)
 
         # Create failure modes and associate with annotations
