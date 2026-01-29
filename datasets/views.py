@@ -148,7 +148,7 @@ def annotation_view(request, dataset_uid, trace_uid):
 
     # Get all traces in dataset (ordered)
     all_traces = list(dataset.get_traces_ordered())
-    
+
     # Find current trace index
     try:
         current_index = next(i for i, t in enumerate(all_traces) if t.uid == trace_uid)
@@ -158,7 +158,11 @@ def annotation_view(request, dataset_uid, trace_uid):
 
     # Get next/previous trace UIDs
     prev_trace_uid = all_traces[current_index - 1].uid if current_index > 0 else None
-    next_trace_uid = all_traces[current_index + 1].uid if current_index < len(all_traces) - 1 else None
+    next_trace_uid = (
+        all_traces[current_index + 1].uid
+        if current_index < len(all_traces) - 1
+        else None
+    )
 
     # Get existing annotation if any
     annotation = None
@@ -176,26 +180,30 @@ def annotation_view(request, dataset_uid, trace_uid):
         form = AnnotationForm(request.POST)
         if form.is_valid():
             notes = form.cleaned_data["notes"]
-            
+
             # Get or create annotation
             annotation, created = Annotation.objects.get_or_create(
-                trace=trace,
-                dataset=dataset,
-                defaults={"notes": notes}
+                trace=trace, dataset=dataset, defaults={"notes": notes}
             )
-            
+
             if not created:
                 # Update existing annotation
                 annotation.notes = notes
                 annotation.save()
-            
+
             messages.success(request, "Annotation saved successfully.")
-            
+
             # Redirect to next trace or back to dataset detail
             if next_trace_uid:
-                return redirect("datasets:annotate", dataset_uid=dataset_uid, trace_uid=next_trace_uid)
+                return redirect(
+                    "datasets:annotate",
+                    dataset_uid=dataset_uid,
+                    trace_uid=next_trace_uid,
+                )
             else:
-                messages.info(request, "You've finished annotating all traces in this dataset.")
+                messages.info(
+                    request, "You've finished annotating all traces in this dataset."
+                )
                 return redirect("datasets:detail", dataset_uid=dataset_uid)
     else:
         # GET request - populate form with existing annotation if available

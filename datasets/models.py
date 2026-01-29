@@ -40,8 +40,12 @@ class Annotation(models.Model):
     uid = models.UUIDField(
         default=uuid.uuid4, editable=False, unique=True, db_index=True
     )
-    trace = models.ForeignKey(Trace, on_delete=models.CASCADE, related_name="annotations")
-    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name="annotations")
+    trace = models.ForeignKey(
+        Trace, on_delete=models.CASCADE, related_name="annotations"
+    )
+    dataset = models.ForeignKey(
+        Dataset, on_delete=models.CASCADE, related_name="annotations"
+    )
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

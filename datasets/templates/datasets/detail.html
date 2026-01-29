@@ -12,7 +12,8 @@
             <div>
                 {% if traces %}
                     {% with first_trace=traces|first %}
-                        <a href="{% url 'datasets:annotate' dataset.uid first_trace.uid %}" class="btn btn-primary me-2">Annotate Dataset</a>
+                        <a href="{% url 'datasets:annotate' dataset.uid first_trace.uid %}"
+                           class="btn btn-primary me-2">Annotate Dataset</a>
                     {% endwith %}
                 {% endif %}
                 <a href="{% url 'datasets:list' %}" class="btn btn-outline-secondary">Back to Datasets</a>
@@ -36,7 +37,8 @@
                         <div>
                             {% if traces %}
                                 {% with first_trace=traces|first %}
-                                    <a href="{% url 'datasets:annotate' dataset.uid first_trace.uid %}" class="btn btn-sm btn-primary me-2">Annotate Dataset</a>
+                                    <a href="{% url 'datasets:annotate' dataset.uid first_trace.uid %}"
+                                       class="btn btn-sm btn-primary me-2">Annotate Dataset</a>
                                 {% endwith %}
                             {% endif %}
                             <form method="post"
