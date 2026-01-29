@@ -692,6 +692,7 @@ class FailureModeModelTests(TestCase):
 
         # Wait a tiny bit and update
         import time
+
         time.sleep(0.01)
 
         failure_mode.description = "Updated description"

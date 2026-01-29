@@ -980,7 +980,9 @@ class CategorizeDatasetViewTests(TestCase):
 
         # Create annotations with notes
         self.annotation1 = Annotation.objects.create(
-            trace=self.trace1, dataset=self.dataset, notes="This is a hallucination error"
+            trace=self.trace1,
+            dataset=self.dataset,
+            notes="This is a hallucination error",
         )
         self.annotation2 = Annotation.objects.create(
             trace=self.trace2, dataset=self.dataset, notes="Format error in response"
@@ -1032,10 +1034,14 @@ class CategorizeDatasetViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(FailureMode.objects.filter(project=self.project).count(), 2)
         self.assertTrue(
-            FailureMode.objects.filter(project=self.project, name="Hallucination").exists()
+            FailureMode.objects.filter(
+                project=self.project, name="Hallucination"
+            ).exists()
         )
         self.assertTrue(
-            FailureMode.objects.filter(project=self.project, name="Format Error").exists()
+            FailureMode.objects.filter(
+                project=self.project, name="Format Error"
+            ).exists()
         )
 
     @patch("datasets.views.categorize_annotations")
@@ -1054,9 +1060,7 @@ class CategorizeDatasetViewTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         messages_list = list(get_messages(response.wsgi_request))
-        self.assertTrue(
-            any("No annotations" in str(m) for m in messages_list)
-        )
+        self.assertTrue(any("No annotations" in str(m) for m in messages_list))
 
     @patch("datasets.views.categorize_annotations")
     def test_categorize_dataset_handles_api_error(self, mock_categorize):
@@ -1074,9 +1078,7 @@ class CategorizeDatasetViewTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         messages_list = list(get_messages(response.wsgi_request))
-        self.assertTrue(
-            any("Failed to generate" in str(m) for m in messages_list)
-        )
+        self.assertTrue(any("Failed to generate" in str(m) for m in messages_list))
 
     @patch("datasets.views.categorize_annotations")
     def test_categorize_dataset_does_not_auto_assign_categories(self, mock_categorize):
@@ -1095,7 +1097,9 @@ class CategorizeDatasetViewTests(TestCase):
         response = self.client.post(url)
 
         self.assertEqual(response.status_code, 302)
-        failure_mode = FailureMode.objects.get(project=self.project, name="Hallucination")
+        failure_mode = FailureMode.objects.get(
+            project=self.project, name="Hallucination"
+        )
         # Categories should not be automatically assigned
         self.assertEqual(self.annotation1.failure_modes.count(), 0)
         self.assertEqual(self.annotation2.failure_modes.count(), 0)
@@ -1174,7 +1178,10 @@ class CategoryListViewTests(TestCase):
         # failure_mode1 has 1 annotation, failure_mode2 has 0
         context = response.context
         self.assertIn("failure_modes_with_counts", context)
-        counts = {item["failure_mode"].name: item["count"] for item in context["failure_modes_with_counts"]}
+        counts = {
+            item["failure_mode"].name: item["count"]
+            for item in context["failure_modes_with_counts"]
+        }
         self.assertEqual(counts["Hallucination"], 1)
         self.assertEqual(counts["Format Error"], 0)
 
@@ -1381,9 +1388,7 @@ class CategoryEditViewTests(TestCase):
         session["current_project_id"] = self.project.id
         session.save()
 
-        url = reverse(
-            "datasets:category_edit", args=[dataset2.uid, failure_mode2.uid]
-        )
+        url = reverse("datasets:category_edit", args=[dataset2.uid, failure_mode2.uid])
         response = self.client.get(url)
         # Should redirect with error
         self.assertEqual(response.status_code, 302)

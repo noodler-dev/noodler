@@ -11,6 +11,7 @@ from .models import Dataset, Annotation, FailureMode
 from .forms import DatasetCreateForm, AnnotationForm, FailureModeForm
 from .utils import create_dataset_from_traces
 from .llm_utils import categorize_annotations
+from .decorators import validate_dataset_access, validate_failure_mode_access
 
 logger = logging.getLogger(__name__)
 
@@ -68,17 +69,9 @@ def dataset_create(request):
 @require_project_access(require_current_project=True)
 def dataset_detail(request, dataset_uid):
     """View dataset details and all associated traces."""
-    dataset = get_object_or_404(Dataset, uid=dataset_uid)
-
-    # Check access - user must have access to the dataset's project
-    if dataset.project not in request.user_projects:
-        messages.error(request, "You do not have access to this dataset.")
-        return redirect("projects:list")
-
-    # Ensure the dataset belongs to the current project
-    if not dataset.belongs_to_project(request.current_project):
-        messages.error(request, "This dataset does not belong to the current project.")
-        return redirect("datasets:list")
+    dataset, error_response = validate_dataset_access(request, dataset_uid)
+    if error_response:
+        return error_response
 
     # Get all traces for this dataset, ordered by started_at
     traces = dataset.get_traces_ordered()
@@ -113,17 +106,9 @@ def dataset_detail(request, dataset_uid):
 @require_POST
 def dataset_delete(request, dataset_uid):
     """Delete a dataset (POST-only)."""
-    dataset = get_object_or_404(Dataset, uid=dataset_uid)
-
-    # Check access
-    if dataset.project not in request.user_projects:
-        messages.error(request, "You do not have access to this dataset.")
-        return redirect("projects:list")
-
-    # Ensure the dataset belongs to the current project
-    if not dataset.belongs_to_project(request.current_project):
-        messages.error(request, "This dataset does not belong to the current project.")
-        return redirect("datasets:list")
+    dataset, error_response = validate_dataset_access(request, dataset_uid)
+    if error_response:
+        return error_response
 
     dataset_name = dataset.name
     dataset.delete()
@@ -137,18 +122,11 @@ def dataset_delete(request, dataset_uid):
 @require_http_methods(["GET", "POST"])
 def annotation_view(request, dataset_uid, trace_uid):
     """View for annotating a trace within a dataset."""
-    dataset = get_object_or_404(Dataset, uid=dataset_uid)
+    dataset, error_response = validate_dataset_access(request, dataset_uid)
+    if error_response:
+        return error_response
+
     trace = get_object_or_404(Trace, uid=trace_uid)
-
-    # Check access - user must have access to the dataset's project
-    if dataset.project not in request.user_projects:
-        messages.error(request, "You do not have access to this dataset.")
-        return redirect("projects:list")
-
-    # Ensure the dataset belongs to the current project
-    if not dataset.belongs_to_project(request.current_project):
-        messages.error(request, "This dataset does not belong to the current project.")
-        return redirect("datasets:list")
 
     # Verify trace belongs to dataset
     if not dataset.contains_trace(trace):
@@ -243,17 +221,9 @@ def annotation_view(request, dataset_uid, trace_uid):
 @require_POST
 def categorize_dataset(request, dataset_uid):
     """Generate failure mode categories from dataset annotations using LLM."""
-    dataset = get_object_or_404(Dataset, uid=dataset_uid)
-
-    # Check access
-    if dataset.project not in request.user_projects:
-        messages.error(request, "You do not have access to this dataset.")
-        return redirect("projects:list")
-
-    # Ensure the dataset belongs to the current project
-    if not dataset.belongs_to_project(request.current_project):
-        messages.error(request, "This dataset does not belong to the current project.")
-        return redirect("datasets:list")
+    dataset, error_response = validate_dataset_access(request, dataset_uid)
+    if error_response:
+        return error_response
 
     # Get all annotations with notes
     annotations = Annotation.objects.filter(dataset=dataset).exclude(notes="")
@@ -322,17 +292,9 @@ def categorize_dataset(request, dataset_uid):
 @require_project_access(require_current_project=True)
 def category_list(request, dataset_uid):
     """List all failure modes for the dataset's project."""
-    dataset = get_object_or_404(Dataset, uid=dataset_uid)
-
-    # Check access
-    if dataset.project not in request.user_projects:
-        messages.error(request, "You do not have access to this dataset.")
-        return redirect("projects:list")
-
-    # Ensure the dataset belongs to the current project
-    if not dataset.belongs_to_project(request.current_project):
-        messages.error(request, "This dataset does not belong to the current project.")
-        return redirect("datasets:list")
+    dataset, error_response = validate_dataset_access(request, dataset_uid)
+    if error_response:
+        return error_response
 
     # Get all failure modes for the project
     failure_modes = FailureMode.objects.filter(project=dataset.project).order_by("name")
@@ -356,17 +318,9 @@ def category_list(request, dataset_uid):
 @require_http_methods(["GET", "POST"])
 def category_create(request, dataset_uid):
     """Create a new failure mode category."""
-    dataset = get_object_or_404(Dataset, uid=dataset_uid)
-
-    # Check access
-    if dataset.project not in request.user_projects:
-        messages.error(request, "You do not have access to this dataset.")
-        return redirect("projects:list")
-
-    # Ensure the dataset belongs to the current project
-    if not dataset.belongs_to_project(request.current_project):
-        messages.error(request, "This dataset does not belong to the current project.")
-        return redirect("datasets:list")
+    dataset, error_response = validate_dataset_access(request, dataset_uid)
+    if error_response:
+        return error_response
 
     if request.method == "POST":
         form = FailureModeForm(request.POST, project=dataset.project)
@@ -396,23 +350,15 @@ def category_create(request, dataset_uid):
 @require_http_methods(["GET", "POST"])
 def category_edit(request, dataset_uid, category_uid):
     """Edit an existing failure mode category."""
-    dataset = get_object_or_404(Dataset, uid=dataset_uid)
-    failure_mode = get_object_or_404(FailureMode, uid=category_uid)
+    dataset, error_response = validate_dataset_access(request, dataset_uid)
+    if error_response:
+        return error_response
 
-    # Check access
-    if dataset.project not in request.user_projects:
-        messages.error(request, "You do not have access to this dataset.")
-        return redirect("projects:list")
-
-    # Ensure the dataset belongs to the current project
-    if not dataset.belongs_to_project(request.current_project):
-        messages.error(request, "This dataset does not belong to the current project.")
-        return redirect("datasets:list")
-
-    # Ensure failure mode belongs to the project
-    if not failure_mode.belongs_to_project(dataset.project):
-        messages.error(request, "This failure mode does not belong to this project.")
-        return redirect("datasets:categories", dataset_uid=dataset_uid)
+    failure_mode, error_response = validate_failure_mode_access(
+        request, dataset, category_uid
+    )
+    if error_response:
+        return error_response
 
     if request.method == "POST":
         form = FailureModeForm(
@@ -443,23 +389,15 @@ def category_edit(request, dataset_uid, category_uid):
 @require_POST
 def category_delete(request, dataset_uid, category_uid):
     """Delete a failure mode category."""
-    dataset = get_object_or_404(Dataset, uid=dataset_uid)
-    failure_mode = get_object_or_404(FailureMode, uid=category_uid)
+    dataset, error_response = validate_dataset_access(request, dataset_uid)
+    if error_response:
+        return error_response
 
-    # Check access
-    if dataset.project not in request.user_projects:
-        messages.error(request, "You do not have access to this dataset.")
-        return redirect("projects:list")
-
-    # Ensure the dataset belongs to the current project
-    if not dataset.belongs_to_project(request.current_project):
-        messages.error(request, "This dataset does not belong to the current project.")
-        return redirect("datasets:list")
-
-    # Ensure failure mode belongs to the project
-    if not failure_mode.belongs_to_project(dataset.project):
-        messages.error(request, "This failure mode does not belong to this project.")
-        return redirect("datasets:categories", dataset_uid=dataset_uid)
+    failure_mode, error_response = validate_failure_mode_access(
+        request, dataset, category_uid
+    )
+    if error_response:
+        return error_response
 
     failure_mode_name = failure_mode.name
     failure_mode.delete()
