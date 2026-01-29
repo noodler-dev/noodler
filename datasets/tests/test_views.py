@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
 from django.utils import timezone
+from datetime import timedelta
 from accounts.models import UserProfile, Organization, Membership
 from projects.models import Project
 from traces.models import Trace, Span
@@ -205,8 +206,8 @@ class DatasetCreateViewTests(TestCase):
         dataset = Dataset.objects.get(name="Test Dataset")
         self.assertRedirects(response, reverse("datasets:detail", args=[dataset.uid]))
 
-    def test_dataset_create_shows_success_message(self):
-        """Test that success message is displayed after creation."""
+    def test_dataset_create_no_success_message(self):
+        """Test that no success message is displayed after creation (removed per requirements)."""
         self.client.login(username="testuser", password="testpass123")
         session = self.client.session
         session["current_project_id"] = self.project.id
@@ -226,8 +227,9 @@ class DatasetCreateViewTests(TestCase):
         )
         messages = list(get_messages(response.wsgi_request))
 
-        self.assertEqual(len(messages), 1)
-        self.assertIn("created successfully", str(messages[0]).lower())
+        # Success message was removed, so no messages should be shown
+        # (unless there's a warning about truncation)
+        self.assertEqual(len(messages), 0)
 
     def test_dataset_create_empty_name_shows_error(self):
         """Test that empty name shows error message."""
@@ -579,30 +581,33 @@ class AnnotationViewTests(TestCase):
         )
         self.dataset = Dataset.objects.create(name="Test Dataset", project=self.project)
 
-        # Create traces
+        # Create traces with different timestamps (ordered by -started_at, so newest first)
+        base_time = timezone.now()
         self.trace1 = Trace.objects.create(
             project=self.project,
             otel_trace_id="trace-1",
-            started_at=timezone.now(),
-            ended_at=timezone.now(),
+            started_at=base_time,
+            ended_at=base_time,
             attributes={},
         )
         self.trace2 = Trace.objects.create(
             project=self.project,
             otel_trace_id="trace-2",
-            started_at=timezone.now(),
-            ended_at=timezone.now(),
+            started_at=base_time - timedelta(seconds=1),
+            ended_at=base_time - timedelta(seconds=1),
             attributes={},
         )
         self.trace3 = Trace.objects.create(
             project=self.project,
             otel_trace_id="trace-3",
-            started_at=timezone.now(),
-            ended_at=timezone.now(),
+            started_at=base_time - timedelta(seconds=2),
+            ended_at=base_time - timedelta(seconds=2),
             attributes={},
         )
-
+        
         self.dataset.traces.add(self.trace1, self.trace2, self.trace3)
+        
+        # Note: Ordered by -started_at, so order is: trace1 (newest), trace2, trace3 (oldest)
 
         # Create spans for trace1
         self.span1 = Span.objects.create(
@@ -732,9 +737,10 @@ class AnnotationViewTests(TestCase):
         session["current_project_id"] = self.project.id
         session.save()
 
+        # trace1 is first in order (newest), so next should be trace2
         url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace1.uid])
         response = self.client.post(url, {"notes": "Notes"})
-
+        
         # Should redirect to trace2 (next unannotated)
         self.assertEqual(response.status_code, 302)
         self.assertIn(str(self.trace2.uid), response.url)
@@ -786,13 +792,14 @@ class AnnotationViewTests(TestCase):
         session["current_project_id"] = self.project.id
         session.save()
 
+        # trace1 is first in order (newest), so current_trace_number should be 1
         url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace1.uid])
         response = self.client.get(url)
-
+        
         self.assertEqual(response.status_code, 200)
         context = response.context
         self.assertEqual(context["total_traces"], 3)
-        self.assertEqual(context["current_trace_number"], 1)
+        self.assertEqual(context["current_trace_number"], 1)  # trace1 is first in order
         self.assertEqual(context["unannotated_count"], 3)
 
     def test_annotation_view_shows_navigation_buttons(self):
@@ -802,7 +809,7 @@ class AnnotationViewTests(TestCase):
         session["current_project_id"] = self.project.id
         session.save()
 
-        # Test first trace (no previous)
+        # Test first trace in order (trace1 is newest, so first) - no previous
         url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace1.uid])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
@@ -810,7 +817,7 @@ class AnnotationViewTests(TestCase):
         self.assertIsNone(context["prev_trace_uid"])
         self.assertIsNotNone(context["next_trace_uid"])
 
-        # Test middle trace (has both)
+        # Test middle trace (trace2) - has both
         url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace2.uid])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
@@ -818,7 +825,7 @@ class AnnotationViewTests(TestCase):
         self.assertIsNotNone(context["prev_trace_uid"])
         self.assertIsNotNone(context["next_trace_uid"])
 
-        # Test last trace (no next)
+        # Test last trace (trace3 is oldest, so last) - no next
         url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace3.uid])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
@@ -891,10 +898,10 @@ class AnnotationViewTests(TestCase):
         Annotation.objects.create(trace=self.trace2, dataset=self.dataset, notes="")
         Annotation.objects.create(trace=self.trace3, dataset=self.dataset, notes="")
 
-        # In review mode, should navigate to next trace in order
+        # In review mode, trace1 is first, so next should be trace2
         url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace1.uid])
         response = self.client.get(url)
-
+        
         self.assertEqual(response.status_code, 200)
         context = response.context
         self.assertTrue(context["all_annotated"])
@@ -912,11 +919,12 @@ class AnnotationViewTests(TestCase):
         Annotation.objects.create(trace=self.trace2, dataset=self.dataset, notes="")
         Annotation.objects.create(trace=self.trace3, dataset=self.dataset, notes="")
 
-        # Finish reviewing (post on last trace)
+        # Finish reviewing (post on last trace in order - trace3)
         url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace3.uid])
         response = self.client.post(url, {"notes": "Updated notes"}, follow=True)
-
+        
         messages = list(get_messages(response.wsgi_request))
+        self.assertGreater(len(messages), 0)
         self.assertIn("finished reviewing", str(messages[0]).lower())
 
     def test_annotation_view_shows_conversation_messages(self):
