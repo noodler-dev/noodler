@@ -37,6 +37,10 @@ class Dataset(models.Model):
         )
         return self.get_traces_ordered().exclude(id__in=annotated_trace_ids).first()
 
+    def get_first_trace(self):
+        """Get the first trace in this dataset (for review mode when all are annotated)."""
+        return self.get_traces_ordered().first()
+
     def get_unannotated_count(self):
         """Return the number of traces that haven't been annotated yet."""
         annotated_trace_ids = Annotation.objects.filter(dataset=self).values_list(

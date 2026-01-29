@@ -13,8 +13,9 @@
                 {% if first_unannotated_trace %}
                     <a href="{% url 'datasets:annotate' dataset.uid first_unannotated_trace.uid %}"
                        class="btn btn-primary me-2">Annotate Dataset</a>
-                {% elif traces %}
-                    <span class="text-muted me-2">All traces annotated</span>
+                {% elif first_trace %}
+                    <a href="{% url 'datasets:annotate' dataset.uid first_trace.uid %}"
+                       class="btn btn-primary me-2">Review Annotations</a>
                 {% endif %}
                 <a href="{% url 'datasets:list' %}" class="btn btn-outline-secondary">Back to Datasets</a>
             </div>
@@ -38,8 +39,9 @@
                             {% if first_unannotated_trace %}
                                 <a href="{% url 'datasets:annotate' dataset.uid first_unannotated_trace.uid %}"
                                    class="btn btn-sm btn-primary me-2">Annotate Dataset</a>
-                            {% elif traces %}
-                                <span class="text-muted me-2">All traces annotated</span>
+                            {% elif first_trace %}
+                                <a href="{% url 'datasets:annotate' dataset.uid first_trace.uid %}"
+                                   class="btn btn-sm btn-primary me-2">Review Annotations</a>
                             {% endif %}
                             <form method="post"
                                   action="{% url 'datasets:delete' dataset.uid %}"

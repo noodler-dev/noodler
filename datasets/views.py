@@ -91,12 +91,15 @@ def dataset_detail(request, dataset_uid):
 
     # Get first unannotated trace for annotation entry point
     first_unannotated_trace = dataset.get_first_unannotated_trace()
+    # Get first trace for review mode (when all are annotated)
+    first_trace = dataset.get_first_trace() if not first_unannotated_trace else None
 
     context = {
         "dataset": dataset,
         "traces": traces,
         "trace_count": dataset.trace_count,
         "first_unannotated_trace": first_unannotated_trace,
+        "first_trace": first_trace,
         "unannotated_count": dataset.get_unannotated_count(),
         "current_project": request.current_project,
     }
@@ -165,18 +168,29 @@ def annotation_view(request, dataset_uid, trace_uid):
         messages.error(request, "Trace not found in dataset.")
         return redirect("datasets:detail", dataset_uid=dataset_uid)
 
+    # Check if all traces are annotated (review mode)
+    all_annotated = len(annotated_trace_ids) == len(all_traces)
+
     # Get next/previous trace UIDs
     # Previous: go to previous trace (even if annotated, so users can review)
     prev_trace_uid = all_traces[current_index - 1].uid if current_index > 0 else None
 
-    # Next: skip to next unannotated trace
-    next_unannotated_trace = None
-    for t in all_traces[current_index + 1 :]:
-        if t.id not in annotated_trace_ids:
-            next_unannotated_trace = t
-            break
-
-    next_trace_uid = next_unannotated_trace.uid if next_unannotated_trace else None
+    # Next: behavior depends on whether all traces are annotated
+    if all_annotated:
+        # Review mode: go to next trace in order
+        next_trace_uid = (
+            all_traces[current_index + 1].uid
+            if current_index < len(all_traces) - 1
+            else None
+        )
+    else:
+        # Annotation mode: skip to next unannotated trace
+        next_unannotated_trace = None
+        for t in all_traces[current_index + 1 :]:
+            if t.id not in annotated_trace_ids:
+                next_unannotated_trace = t
+                break
+        next_trace_uid = next_unannotated_trace.uid if next_unannotated_trace else None
 
     # Get existing annotation if any
     annotation = None
@@ -231,9 +245,13 @@ def annotation_view(request, dataset_uid, trace_uid):
                     trace_uid=next_trace_uid,
                 )
             else:
-                messages.info(
-                    request, "You've finished annotating all traces in this dataset."
-                )
+                if all_annotated:
+                    messages.info(request, "You've finished reviewing all traces.")
+                else:
+                    messages.info(
+                        request,
+                        "You've finished annotating all traces in this dataset.",
+                    )
                 return redirect("datasets:detail", dataset_uid=dataset_uid)
     else:
         # GET request - populate form with existing annotation if available
@@ -258,6 +276,7 @@ def annotation_view(request, dataset_uid, trace_uid):
         "annotated_count": annotated_count,
         "unannotated_count": unannotated_count,
         "current_unannotated_number": current_unannotated_number,
+        "all_annotated": all_annotated,
         "prev_trace_uid": prev_trace_uid,
         "next_trace_uid": next_trace_uid,
         "current_project": request.current_project,
