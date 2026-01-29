@@ -164,7 +164,9 @@ class DatasetModelTests(TestCase):
 
         self.assertIsNotNone(navigation)
         self.assertEqual(navigation["prev_trace_uid"], self.trace2.uid)
-        self.assertIsNone(navigation["next_trace_uid"])
+        # If there are unannotated traces, should find the first one (trace1)
+        # Only None if all traces are annotated
+        self.assertEqual(navigation["next_trace_uid"], self.trace1.uid)
         self.assertFalse(navigation["all_annotated"])
 
     def test_get_annotation_navigation_skips_annotated(self):
@@ -177,6 +179,21 @@ class DatasetModelTests(TestCase):
         # From trace1, should skip trace2 and go to trace3
         navigation = self.dataset.get_annotation_navigation(self.trace1)
         self.assertEqual(navigation["next_trace_uid"], self.trace3.uid)
+
+    def test_get_annotation_navigation_finds_unannotated_backward(self):
+        """Test that navigation finds unannotated traces backward when user navigates to later trace."""
+        # Annotate trace3 (last trace)
+        Annotation.objects.create(
+            trace=self.trace3, dataset=self.dataset, notes="Notes"
+        )
+
+        # If user navigates directly to trace3 (via URL/bookmark), and trace1/trace2 are unannotated,
+        # should find trace1 (first unannotated) as next, not None
+        navigation = self.dataset.get_annotation_navigation(self.trace3)
+        self.assertIsNotNone(navigation["next_trace_uid"])
+        # Should find trace1 (first unannotated in order)
+        self.assertEqual(navigation["next_trace_uid"], self.trace1.uid)
+        self.assertFalse(navigation["all_annotated"])
 
     def test_get_annotation_navigation_review_mode(self):
         """Test that navigation goes through all traces in review mode."""
@@ -195,6 +212,11 @@ class DatasetModelTests(TestCase):
         navigation = self.dataset.get_annotation_navigation(self.trace1)
         self.assertTrue(navigation["all_annotated"])
         self.assertEqual(navigation["next_trace_uid"], self.trace2.uid)
+
+        # When on last trace in review mode, next should be None
+        navigation = self.dataset.get_annotation_navigation(self.trace3)
+        self.assertTrue(navigation["all_annotated"])
+        self.assertIsNone(navigation["next_trace_uid"])
 
     def test_get_annotation_navigation_trace_not_in_dataset(self):
         """Test that navigation returns None for trace not in dataset."""

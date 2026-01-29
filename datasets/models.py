@@ -95,11 +95,21 @@ class Dataset(models.Model):
             )
         else:
             # Annotation mode: skip to next unannotated trace
+            # First, search forward from current position
             next_unannotated_trace = None
             for t in all_traces[current_index + 1 :]:
                 if t.id not in annotated_trace_ids:
                     next_unannotated_trace = t
                     break
+
+            # If no unannotated trace found forward, search backward
+            # (handles case where user navigates to later trace while earlier ones remain unannotated)
+            if next_unannotated_trace is None:
+                for t in all_traces[:current_index]:
+                    if t.id not in annotated_trace_ids:
+                        next_unannotated_trace = t
+                        break
+
             next_trace_uid = (
                 next_unannotated_trace.uid if next_unannotated_trace else None
             )
