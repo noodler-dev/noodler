@@ -1,10 +1,8 @@
 import json
 import os
 import logging
-from typing import List, Dict
-
 from openai import OpenAI
-from django.conf import settings
+from typing import List, Dict
 
 logger = logging.getLogger(__name__)
 
