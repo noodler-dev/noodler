@@ -1,10 +1,12 @@
 from django.test import TestCase
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError
 from django.utils import timezone
 from datetime import timedelta
 from accounts.models import Organization
 from projects.models import Project
 from traces.models import Trace
-from datasets.models import Dataset, Annotation
+from datasets.models import Dataset, Annotation, FailureMode
 
 
 class DatasetModelTests(TestCase):
@@ -403,3 +405,297 @@ class AnnotationModelTests(TestCase):
         # Should be ordered by -created_at (newest first)
         self.assertEqual(annotations[0], annotation2)
         self.assertEqual(annotations[1], annotation1)
+
+    def test_annotation_get_failure_modes(self):
+        """Test that get_failure_modes returns associated failure modes."""
+        annotation = Annotation.objects.create(
+            trace=self.trace, dataset=self.dataset, notes="Test notes"
+        )
+
+        # Create failure modes
+        failure_mode1 = FailureMode.objects.create(
+            project=self.project, name="Hallucination", description="False info"
+        )
+        failure_mode2 = FailureMode.objects.create(
+            project=self.project, name="Format Error", description="Wrong format"
+        )
+
+        # Initially no failure modes
+        self.assertEqual(annotation.get_failure_modes().count(), 0)
+
+        # Add failure modes
+        annotation.failure_modes.add(failure_mode1, failure_mode2)
+
+        # Should return both
+        failure_modes = annotation.get_failure_modes()
+        self.assertEqual(failure_modes.count(), 2)
+        self.assertIn(failure_mode1, failure_modes)
+        self.assertIn(failure_mode2, failure_modes)
+
+    def test_annotation_failure_modes_relationship(self):
+        """Test that annotation can have multiple failure modes."""
+        annotation = Annotation.objects.create(
+            trace=self.trace, dataset=self.dataset, notes="Test notes"
+        )
+
+        failure_mode1 = FailureMode.objects.create(
+            project=self.project, name="Hallucination", description="False info"
+        )
+        failure_mode2 = FailureMode.objects.create(
+            project=self.project, name="Format Error", description="Wrong format"
+        )
+
+        annotation.failure_modes.add(failure_mode1)
+        annotation.failure_modes.add(failure_mode2)
+
+        self.assertEqual(annotation.failure_modes.count(), 2)
+        self.assertIn(failure_mode1, annotation.failure_modes.all())
+        self.assertIn(failure_mode2, annotation.failure_modes.all())
+
+    def test_annotation_failure_modes_can_be_empty(self):
+        """Test that annotation can have no failure modes."""
+        annotation = Annotation.objects.create(
+            trace=self.trace, dataset=self.dataset, notes="Test notes"
+        )
+
+        self.assertEqual(annotation.failure_modes.count(), 0)
+        self.assertEqual(annotation.get_failure_modes().count(), 0)
+
+    def test_annotation_failure_modes_reverse_relationship(self):
+        """Test that failure mode can access annotations via reverse relationship."""
+        annotation1 = Annotation.objects.create(
+            trace=self.trace, dataset=self.dataset, notes="Notes 1"
+        )
+
+        # Create another trace and annotation
+        trace2 = Trace.objects.create(
+            project=self.project,
+            otel_trace_id="trace-2",
+            started_at=timezone.now(),
+            ended_at=timezone.now(),
+            attributes={},
+        )
+        self.dataset.traces.add(trace2)
+        annotation2 = Annotation.objects.create(
+            trace=trace2, dataset=self.dataset, notes="Notes 2"
+        )
+
+        failure_mode = FailureMode.objects.create(
+            project=self.project, name="Hallucination", description="False info"
+        )
+
+        annotation1.failure_modes.add(failure_mode)
+        annotation2.failure_modes.add(failure_mode)
+
+        # Check reverse relationship
+        annotations = failure_mode.annotations.all()
+        self.assertEqual(annotations.count(), 2)
+        self.assertIn(annotation1, annotations)
+        self.assertIn(annotation2, annotations)
+
+
+class FailureModeModelTests(TestCase):
+    def setUp(self):
+        self.org = Organization.objects.create(name="Test Org")
+        self.project = Project.objects.create(
+            name="Test Project", organization=self.org
+        )
+
+        # Create another project for testing cross-project scenarios
+        self.org2 = Organization.objects.create(name="Test Org 2")
+        self.project2 = Project.objects.create(
+            name="Test Project 2", organization=self.org2
+        )
+
+    def test_failure_mode_creation(self):
+        """Test that failure mode can be created."""
+        failure_mode = FailureMode.objects.create(
+            project=self.project,
+            name="Hallucination",
+            description="AI generated false information",
+        )
+
+        self.assertIsNotNone(failure_mode.uid)
+        self.assertEqual(failure_mode.name, "Hallucination")
+        self.assertEqual(failure_mode.description, "AI generated false information")
+        self.assertEqual(failure_mode.project, self.project)
+        self.assertIsNotNone(failure_mode.created_at)
+        self.assertIsNotNone(failure_mode.updated_at)
+
+    def test_failure_mode_str(self):
+        """Test that FailureMode __str__ returns the name."""
+        failure_mode = FailureMode.objects.create(
+            project=self.project, name="Hallucination", description="Test"
+        )
+        self.assertEqual(str(failure_mode), "Hallucination")
+
+    def test_failure_mode_unique_constraint_per_project(self):
+        """Test that unique constraint prevents duplicate names within same project."""
+        FailureMode.objects.create(
+            project=self.project, name="Hallucination", description="Test"
+        )
+
+        # Try to create another with same name in same project
+        with self.assertRaises(IntegrityError):
+            FailureMode.objects.create(
+                project=self.project, name="Hallucination", description="Different"
+            )
+
+    def test_failure_mode_same_name_different_projects(self):
+        """Test that same name is allowed in different projects."""
+        FailureMode.objects.create(
+            project=self.project, name="Hallucination", description="Test"
+        )
+
+        # Should be able to create same name in different project
+        failure_mode2 = FailureMode.objects.create(
+            project=self.project2, name="Hallucination", description="Test"
+        )
+
+        self.assertIsNotNone(failure_mode2)
+        self.assertEqual(failure_mode2.name, "Hallucination")
+        self.assertEqual(failure_mode2.project, self.project2)
+
+    def test_failure_mode_belongs_to_project(self):
+        """Test that belongs_to_project correctly identifies project ownership."""
+        failure_mode = FailureMode.objects.create(
+            project=self.project, name="Hallucination", description="Test"
+        )
+
+        self.assertTrue(failure_mode.belongs_to_project(self.project))
+        self.assertFalse(failure_mode.belongs_to_project(self.project2))
+
+    def test_failure_mode_ordering(self):
+        """Test that failure modes are ordered by name."""
+        failure_mode_c = FailureMode.objects.create(
+            project=self.project, name="C Category", description="Test"
+        )
+        failure_mode_a = FailureMode.objects.create(
+            project=self.project, name="A Category", description="Test"
+        )
+        failure_mode_b = FailureMode.objects.create(
+            project=self.project, name="B Category", description="Test"
+        )
+
+        failure_modes = list(FailureMode.objects.filter(project=self.project))
+        # Should be ordered by name (alphabetically)
+        self.assertEqual(failure_modes[0], failure_mode_a)
+        self.assertEqual(failure_modes[1], failure_mode_b)
+        self.assertEqual(failure_modes[2], failure_mode_c)
+
+    def test_failure_mode_empty_description(self):
+        """Test that failure mode can have empty description."""
+        failure_mode = FailureMode.objects.create(
+            project=self.project, name="Hallucination", description=""
+        )
+
+        self.assertEqual(failure_mode.description, "")
+        self.assertIsNotNone(failure_mode.uid)
+
+    def test_failure_mode_project_cascade_delete(self):
+        """Test that failure modes are deleted when project is deleted."""
+        failure_mode = FailureMode.objects.create(
+            project=self.project, name="Hallucination", description="Test"
+        )
+        failure_mode_id = failure_mode.id
+
+        # Delete project
+        self.project.delete()
+
+        # Failure mode should be deleted
+        self.assertFalse(FailureMode.objects.filter(id=failure_mode_id).exists())
+
+    def test_failure_mode_reverse_relationship(self):
+        """Test that project can access failure modes via reverse relationship."""
+        failure_mode1 = FailureMode.objects.create(
+            project=self.project, name="Hallucination", description="Test"
+        )
+        failure_mode2 = FailureMode.objects.create(
+            project=self.project, name="Format Error", description="Test"
+        )
+
+        # Check reverse relationship
+        failure_modes = self.project.failure_modes.all()
+        self.assertEqual(failure_modes.count(), 2)
+        self.assertIn(failure_mode1, failure_modes)
+        self.assertIn(failure_mode2, failure_modes)
+
+    def test_failure_mode_annotations_relationship(self):
+        """Test that failure mode can have multiple annotations."""
+        dataset = Dataset.objects.create(name="Test Dataset", project=self.project)
+        trace1 = Trace.objects.create(
+            project=self.project,
+            otel_trace_id="trace-1",
+            started_at=timezone.now(),
+            ended_at=timezone.now(),
+            attributes={},
+        )
+        trace2 = Trace.objects.create(
+            project=self.project,
+            otel_trace_id="trace-2",
+            started_at=timezone.now(),
+            ended_at=timezone.now(),
+            attributes={},
+        )
+        dataset.traces.add(trace1, trace2)
+
+        failure_mode = FailureMode.objects.create(
+            project=self.project, name="Hallucination", description="Test"
+        )
+
+        annotation1 = Annotation.objects.create(
+            trace=trace1, dataset=dataset, notes="Notes 1"
+        )
+        annotation2 = Annotation.objects.create(
+            trace=trace2, dataset=dataset, notes="Notes 2"
+        )
+
+        annotation1.failure_modes.add(failure_mode)
+        annotation2.failure_modes.add(failure_mode)
+
+        # Check reverse relationship
+        annotations = failure_mode.annotations.all()
+        self.assertEqual(annotations.count(), 2)
+        self.assertIn(annotation1, annotations)
+        self.assertIn(annotation2, annotations)
+
+    def test_failure_mode_uid_is_unique(self):
+        """Test that failure mode uid is unique."""
+        failure_mode1 = FailureMode.objects.create(
+            project=self.project, name="Category 1", description="Test"
+        )
+        failure_mode2 = FailureMode.objects.create(
+            project=self.project, name="Category 2", description="Test"
+        )
+
+        self.assertNotEqual(failure_mode1.uid, failure_mode2.uid)
+        self.assertIsNotNone(failure_mode1.uid)
+        self.assertIsNotNone(failure_mode2.uid)
+
+    def test_failure_mode_timestamps(self):
+        """Test that created_at and updated_at are set correctly."""
+        failure_mode = FailureMode.objects.create(
+            project=self.project, name="Hallucination", description="Test"
+        )
+
+        self.assertIsNotNone(failure_mode.created_at)
+        self.assertIsNotNone(failure_mode.updated_at)
+        self.assertLessEqual(failure_mode.created_at, timezone.now())
+        self.assertLessEqual(failure_mode.updated_at, timezone.now())
+
+    def test_failure_mode_updated_at_changes_on_update(self):
+        """Test that updated_at changes when failure mode is updated."""
+        failure_mode = FailureMode.objects.create(
+            project=self.project, name="Hallucination", description="Test"
+        )
+        original_updated_at = failure_mode.updated_at
+
+        # Wait a tiny bit and update
+        import time
+        time.sleep(0.01)
+
+        failure_mode.description = "Updated description"
+        failure_mode.save()
+
+        failure_mode.refresh_from_db()
+        self.assertGreater(failure_mode.updated_at, original_updated_at)
