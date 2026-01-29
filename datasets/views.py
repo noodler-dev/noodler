@@ -1,11 +1,10 @@
-import json
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_http_methods, require_POST
 from projects.decorators import require_project_access
 from traces.models import Trace, Span
-from traces.utils import format_duration, extract_conversation_messages
+from traces.utils import extract_conversation_messages
 from .models import Dataset, Annotation
 from .forms import DatasetCreateForm, AnnotationForm
 from .utils import create_dataset_from_traces
@@ -218,54 +217,10 @@ def annotation_view(request, dataset_uid, trace_uid):
     # Extract conversation messages
     conversation_messages = extract_conversation_messages(spans)
 
-    # Calculate durations for trace and spans
-    trace_duration = format_duration(trace.started_at, trace.ended_at)
-
-    # Calculate total tokens across all spans
-    total_input_tokens = sum(span.input_tokens or 0 for span in spans)
-    total_output_tokens = sum(span.output_tokens or 0 for span in spans)
-    total_tokens = total_input_tokens + total_output_tokens
-
-    spans_with_duration = []
-    for span in spans:
-        span_duration = format_duration(span.start_time, span.end_time)
-
-        # Format JSON fields for display
-        finished_reasons_json = (
-            json.dumps(span.finished_reasons, indent=2)
-            if span.finished_reasons
-            else None
-        )
-        system_instructions_json = (
-            json.dumps(span.system_instructions, indent=2)
-            if span.system_instructions
-            else None
-        )
-        input_messages_json = (
-            json.dumps(span.input_messages, indent=2) if span.input_messages else None
-        )
-        output_messages_json = (
-            json.dumps(span.output_messages, indent=2) if span.output_messages else None
-        )
-
-        spans_with_duration.append(
-            {
-                "span": span,
-                "duration": span_duration,
-                "finished_reasons_json": finished_reasons_json,
-                "system_instructions_json": system_instructions_json,
-                "input_messages_json": input_messages_json,
-                "output_messages_json": output_messages_json,
-            }
-        )
-
     context = {
         "dataset": dataset,
         "trace": trace,
-        "trace_duration": trace_duration,
-        "spans_with_duration": spans_with_duration,
         "conversation_messages": conversation_messages,
-        "total_tokens": total_tokens,
         "form": form,
         "current_trace_number": current_trace_number,
         "total_traces": total_traces,
