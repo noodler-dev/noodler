@@ -67,11 +67,9 @@
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Conversation</h5>
-                        <a href="{% url 'traces:detail' trace.uid %}" 
+                        <a href="{% url 'traces:detail' trace.uid %}"
                            class="btn btn-sm btn-outline-secondary"
-                           title="View full trace">
-                            View Trace
-                        </a>
+                           title="View full trace">View Trace</a>
                     </div>
                     <div class="card-body">
                         {% if conversation_messages %}

@@ -32,12 +32,16 @@ class Dataset(models.Model):
 
     def get_first_unannotated_trace(self):
         """Get the first trace in this dataset that hasn't been annotated yet."""
-        annotated_trace_ids = Annotation.objects.filter(dataset=self).values_list("trace_id", flat=True)
+        annotated_trace_ids = Annotation.objects.filter(dataset=self).values_list(
+            "trace_id", flat=True
+        )
         return self.get_traces_ordered().exclude(id__in=annotated_trace_ids).first()
 
     def get_unannotated_count(self):
         """Return the number of traces that haven't been annotated yet."""
-        annotated_trace_ids = Annotation.objects.filter(dataset=self).values_list("trace_id", flat=True)
+        annotated_trace_ids = Annotation.objects.filter(dataset=self).values_list(
+            "trace_id", flat=True
+        )
         return self.traces.exclude(id__in=annotated_trace_ids).count()
 
     class Meta:
