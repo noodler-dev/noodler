@@ -52,11 +52,6 @@ def dataset_create(request):
                     request,
                     f"Dataset created with {result.actual_count} traces (requested {result.requested_count}, but only {result.available_count} available).",
                 )
-            else:
-                messages.success(
-                    request,
-                    f'Dataset "{result.dataset.name}" created successfully with {result.actual_count} traces.',
-                )
 
             return redirect("datasets:detail", dataset_uid=result.dataset.uid)
     else:
