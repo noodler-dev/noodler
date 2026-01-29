@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.utils import timezone
 from datetime import timedelta
-from accounts.models import UserProfile, Organization, Membership
+from accounts.models import Organization
 from projects.models import Project
 from traces.models import Trace
 from datasets.models import Dataset, Annotation
