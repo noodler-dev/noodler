@@ -295,16 +295,11 @@ def categorize_dataset(request, dataset_uid):
                         failure_mode.description = description
                         failure_mode.save()
 
-                # Associate with all annotations (simple approach - can be refined)
-                # In a more sophisticated version, we could use LLM to match specific annotations
-                for annotation in annotations:
-                    if failure_mode not in annotation.failure_modes.all():
-                        annotation.failure_modes.add(failure_mode)
-
         messages.success(
             request,
             f"Successfully generated {created_count} new failure mode categories. "
-            f"Total categories: {len(categories_data)}",
+            f"Total categories: {len(categories_data)}. "
+            f"You can now manually assign these categories to annotations.",
         )
 
     except ValueError as e:
