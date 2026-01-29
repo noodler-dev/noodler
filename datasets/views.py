@@ -232,11 +232,6 @@ def annotation_view(request, dataset_uid, trace_uid):
                 annotation.notes = notes
                 annotation.save()
 
-            if notes:
-                messages.success(request, "Annotation saved successfully.")
-            else:
-                messages.success(request, "Trace marked as reviewed.")
-
             # Redirect to next trace or back to dataset detail
             if next_trace_uid:
                 return redirect(
