@@ -99,18 +99,14 @@
                             <h5 class="mb-0">Categorization</h5>
                         </div>
                         <div class="card-body">
-                            <p class="mb-3">
-                                Generate failure mode categories from your annotations using AI, or manage categories manually.
-                            </p>
+                            <p class="mb-3">Generate failure mode categories from your annotations using AI, or manage categories manually.</p>
                             <div class="d-flex gap-2">
                                 <form method="post"
                                       action="{% url 'datasets:categorize' dataset.uid %}"
                                       class="d-inline"
                                       onsubmit="return confirm('This will analyze all annotations and generate categories. Continue?');">
                                     {% csrf_token %}
-                                    <button type="submit" class="btn btn-primary">
-                                        Generate Categories from Annotations
-                                    </button>
+                                    <button type="submit" class="btn btn-primary">Generate Categories from Annotations</button>
                                 </form>
                                 <a href="{% url 'datasets:categories' dataset.uid %}"
                                    class="btn btn-outline-primary">

@@ -179,7 +179,9 @@ class FailureMode(models.Model):
     )
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="failure_modes")
+    project = models.ForeignKey(
+        Project, on_delete=models.CASCADE, related_name="failure_modes"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

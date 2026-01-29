@@ -89,7 +89,9 @@ def dataset_detail(request, dataset_uid):
     first_trace = dataset.get_first_trace() if not first_unannotated_trace else None
 
     # Get annotations count for categorization
-    annotations_count = Annotation.objects.filter(dataset=dataset).exclude(notes="").count()
+    annotations_count = (
+        Annotation.objects.filter(dataset=dataset).exclude(notes="").count()
+    )
     failure_modes_count = FailureMode.objects.filter(project=dataset.project).count()
 
     context = {
@@ -169,9 +171,7 @@ def annotation_view(request, dataset_uid, trace_uid):
     annotation = Annotation.get_for_trace_dataset(trace, dataset)
 
     if request.method == "POST":
-        form = AnnotationForm(
-            request.POST, project=dataset.project
-        )
+        form = AnnotationForm(request.POST, project=dataset.project)
         if form.is_valid():
             notes = form.cleaned_data.get("notes", "")
             failure_modes = form.cleaned_data.get("failure_modes", [])
@@ -204,7 +204,9 @@ def annotation_view(request, dataset_uid, trace_uid):
         initial_failure_modes = None
         if annotation:
             initial_data["notes"] = annotation.notes
-            initial_failure_modes = list(annotation.failure_modes.values_list("id", flat=True))
+            initial_failure_modes = list(
+                annotation.failure_modes.values_list("id", flat=True)
+            )
         form = AnnotationForm(
             initial=initial_data,
             project=dataset.project,
@@ -268,9 +270,7 @@ def categorize_dataset(request, dataset_uid):
         categories_data = categorize_annotations(list(annotations))
 
         if not categories_data:
-            messages.warning(
-                request, "No categories were generated. Please try again."
-            )
+            messages.warning(request, "No categories were generated. Please try again.")
             return redirect("datasets:detail", dataset_uid=dataset_uid)
 
         # Create failure modes and associate with annotations
@@ -345,9 +345,7 @@ def category_list(request, dataset_uid):
     # Get annotation counts for each failure mode
     failure_modes_with_counts = []
     for fm in failure_modes:
-        count = Annotation.objects.filter(
-            dataset=dataset, failure_modes=fm
-        ).count()
+        count = Annotation.objects.filter(dataset=dataset, failure_modes=fm).count()
         failure_modes_with_counts.append({"failure_mode": fm, "count": count})
 
     context = {
@@ -418,9 +416,7 @@ def category_edit(request, dataset_uid, category_uid):
 
     # Ensure failure mode belongs to the project
     if not failure_mode.belongs_to_project(dataset.project):
-        messages.error(
-            request, "This failure mode does not belong to this project."
-        )
+        messages.error(request, "This failure mode does not belong to this project.")
         return redirect("datasets:categories", dataset_uid=dataset_uid)
 
     if request.method == "POST":
@@ -467,9 +463,7 @@ def category_delete(request, dataset_uid, category_uid):
 
     # Ensure failure mode belongs to the project
     if not failure_mode.belongs_to_project(dataset.project):
-        messages.error(
-            request, "This failure mode does not belong to this project."
-        )
+        messages.error(request, "This failure mode does not belong to this project.")
         return redirect("datasets:categories", dataset_uid=dataset_uid)
 
     failure_mode_name = failure_mode.name

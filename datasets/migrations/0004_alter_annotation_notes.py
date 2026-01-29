@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('datasets', '0003_failuremode_and_annotation_categories'),
+        ("datasets", "0003_failuremode_and_annotation_categories"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='annotation',
-            name='notes',
+            model_name="annotation",
+            name="notes",
             field=models.TextField(blank=True),
         ),
     ]
