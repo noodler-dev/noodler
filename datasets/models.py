@@ -32,3 +32,23 @@ class Dataset(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+
+
+class Annotation(models.Model):
+    """Annotation for a trace within a dataset context."""
+
+    uid = models.UUIDField(
+        default=uuid.uuid4, editable=False, unique=True, db_index=True
+    )
+    trace = models.ForeignKey(Trace, on_delete=models.CASCADE, related_name="annotations")
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name="annotations")
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Annotation for {self.trace.otel_trace_id} in {self.dataset.name}"
+
+    class Meta:
+        unique_together = [["trace", "dataset"]]
+        ordering = ["-created_at"]

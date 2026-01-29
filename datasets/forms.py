@@ -41,3 +41,19 @@ class DatasetCreateForm(forms.Form):
                 )
 
         return num_traces
+
+
+class AnnotationForm(forms.Form):
+    """Form for annotating a trace."""
+
+    notes = forms.CharField(
+        required=False,
+        widget=forms.Textarea(
+            attrs={
+                "class": "form-control",
+                "rows": "8",
+                "placeholder": "Enter your notes about what needs improvement, fixing, or avoiding...",
+            }
+        ),
+        help_text="Describe what went wrong, what needs improvement, or what should be avoided.",
+    )
