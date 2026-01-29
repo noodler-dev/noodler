@@ -604,9 +604,9 @@ class AnnotationViewTests(TestCase):
             ended_at=base_time - timedelta(seconds=2),
             attributes={},
         )
-        
+
         self.dataset.traces.add(self.trace1, self.trace2, self.trace3)
-        
+
         # Note: Ordered by -started_at, so order is: trace1 (newest), trace2, trace3 (oldest)
 
         # Create spans for trace1
@@ -740,7 +740,7 @@ class AnnotationViewTests(TestCase):
         # trace1 is first in order (newest), so next should be trace2
         url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace1.uid])
         response = self.client.post(url, {"notes": "Notes"})
-        
+
         # Should redirect to trace2 (next unannotated)
         self.assertEqual(response.status_code, 302)
         self.assertIn(str(self.trace2.uid), response.url)
@@ -795,7 +795,7 @@ class AnnotationViewTests(TestCase):
         # trace1 is first in order (newest), so current_trace_number should be 1
         url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace1.uid])
         response = self.client.get(url)
-        
+
         self.assertEqual(response.status_code, 200)
         context = response.context
         self.assertEqual(context["total_traces"], 3)
@@ -901,7 +901,7 @@ class AnnotationViewTests(TestCase):
         # In review mode, trace1 is first, so next should be trace2
         url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace1.uid])
         response = self.client.get(url)
-        
+
         self.assertEqual(response.status_code, 200)
         context = response.context
         self.assertTrue(context["all_annotated"])
@@ -922,7 +922,7 @@ class AnnotationViewTests(TestCase):
         # Finish reviewing (post on last trace in order - trace3)
         url = reverse("datasets:annotate", args=[self.dataset.uid, self.trace3.uid])
         response = self.client.post(url, {"notes": "Updated notes"}, follow=True)
-        
+
         messages = list(get_messages(response.wsgi_request))
         self.assertGreater(len(messages), 0)
         self.assertIn("finished reviewing", str(messages[0]).lower())
