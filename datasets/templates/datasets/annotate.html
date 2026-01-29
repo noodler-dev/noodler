@@ -6,7 +6,12 @@
             <div>
                 <h1>Annotate Trace</h1>
                 <p class="text-muted mb-0">
-                    Dataset: <strong>{{ dataset.name }}</strong> • Trace {{ current_trace_number }} of {{ total_traces }}
+                    Dataset: <strong>{{ dataset.name }}</strong>
+                    {% if current_unannotated_number %}
+                        • {{ current_unannotated_number }} of {{ unannotated_count }} remaining
+                    {% else %}
+                        • Trace {{ current_trace_number }} of {{ total_traces }}
+                    {% endif %}
                     {% if annotated_count > 0 %}<span class="badge bg-info ms-2">{{ annotated_count }} annotated</span>{% endif %}
                 </p>
             </div>
@@ -31,14 +36,26 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="text-muted">Progress</span>
-                            <span class="text-muted">{{ current_trace_number }} / {{ total_traces }}</span>
+                            {% if current_unannotated_number %}
+                                <span class="text-muted">{{ current_unannotated_number }} / {{ unannotated_count }} remaining</span>
+                            {% else %}
+                                <span class="text-muted">{{ current_trace_number }} / {{ total_traces }}</span>
+                            {% endif %}
                         </div>
                         <div class="progress" style="height: 25px;">
-                            <div class="progress-bar"
-                                 role="progressbar"
-                                 style="width: {% widthratio current_trace_number total_traces 100 %}%">
-                                {% widthratio current_trace_number total_traces 100 %}%
-                            </div>
+                            {% if current_unannotated_number and unannotated_count > 0 %}
+                                <div class="progress-bar"
+                                     role="progressbar"
+                                     style="width: {% widthratio current_unannotated_number unannotated_count 100 %}%">
+                                    {% widthratio current_unannotated_number unannotated_count 100 %}%
+                                </div>
+                            {% else %}
+                                <div class="progress-bar"
+                                     role="progressbar"
+                                     style="width: {% widthratio current_trace_number total_traces 100 %}%">
+                                    {% widthratio current_trace_number total_traces 100 %}%
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -48,8 +65,13 @@
             <!-- Conversation View -->
             <div class="col-lg-8 col-md-12 mb-4">
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Conversation</h5>
+                        <a href="{% url 'traces:detail' trace.uid %}" 
+                           class="btn btn-sm btn-outline-secondary"
+                           title="View full trace">
+                            View Trace
+                        </a>
                     </div>
                     <div class="card-body">
                         {% if conversation_messages %}
