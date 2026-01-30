@@ -74,6 +74,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "projects.context_processors.current_project",
             ],
         },
     },
@@ -162,5 +163,5 @@ CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "pyamqp://guest@localhos
 
 # Authentication URLs
 
-LOGIN_REDIRECT_URL = "/"
+LOGIN_REDIRECT_URL = "projects:list"
 LOGOUT_REDIRECT_URL = "/accounts/login/"

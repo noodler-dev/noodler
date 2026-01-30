@@ -21,7 +21,6 @@ def project_list(request):
         .select_related("organization")
         .order_by("organization__name", "name")
     )
-    current_project_id = request.session.get("current_project_id")
 
     # Group projects by organization
     projects_by_org = OrderedDict()
@@ -33,7 +32,6 @@ def project_list(request):
 
     context = {
         "projects_by_org": projects_by_org,
-        "current_project_id": current_project_id,
     }
     return render(request, "projects/list.html", context)
 
@@ -85,8 +83,6 @@ def project_detail(request, project_uid):
     context = {
         "project": request.current_project,
         "api_keys": api_keys,
-        "is_current_project": request.session.get("current_project_id")
-        == request.current_project.id,
     }
     return render(request, "projects/detail.html", context)
 
@@ -229,7 +225,6 @@ def api_key_revoke(request, project_uid, key_uid):
 def project_switch(request, project_uid):
     """Switch the current project (stored in session)."""
     request.session["current_project_id"] = request.current_project.id
-    messages.success(request, f'Switched to project "{request.current_project.name}".')
 
     # Support redirect to a different page via 'next' parameter
     # Validate the URL to prevent open redirect vulnerabilities

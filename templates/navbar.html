@@ -1,6 +1,31 @@
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="{% url 'projects:list' %}">Noodler</a>
+        <div class="d-flex align-items-center me-3">
+            <a class="navbar-brand mb-0 me-4" href="{% url 'projects:list' %}">Noodler</a>
+            <div class="dropdown">
+                <a class="nav-link text-white d-flex align-items-center py-0"
+                   href="#"
+                   id="appSelectorDropdown"
+                   role="button"
+                   data-bs-toggle="dropdown"
+                   aria-expanded="false"
+                   aria-label="Open app selector">
+                    <i class="bi bi-grid-3x3-gap-fill fs-5" aria-hidden="true"></i>
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="appSelectorDropdown">
+                    <li>
+                        <a class="dropdown-item" href="{% url 'datasets:list' %}">
+                            <i class="bi bi-collection me-2" aria-hidden="true"></i>Datasets
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{% url 'traces:list' %}">
+                            <i class="bi bi-diagram-3 me-2" aria-hidden="true"></i>Traces
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
         <button class="navbar-toggler"
                 type="button"
                 data-bs-toggle="collapse"
@@ -11,15 +36,46 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'projects:list' %}">Projects</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'traces:list' %}">Traces</a>
-                </li>
-            </ul>
-            <ul class="navbar-nav">
+            <ul class="navbar-nav ms-auto">
+                {% if user.is_authenticated and user_projects %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle text-white"
+                           href="#"
+                           id="projectDropdown"
+                           role="button"
+                           data-bs-toggle="dropdown"
+                           aria-expanded="false">
+                            {% if current_project %}
+                                {{ current_project.name }}
+                            {% else %}
+                                Select project
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end"
+                            aria-labelledby="projectDropdown">
+                            {% for project in user_projects %}
+                                <li>
+                                    <form method="post"
+                                          action="{% url 'projects:switch' project.uid %}"
+                                          class="d-inline w-100">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                        <button type="submit"
+                                                class="dropdown-item w-100 text-start border-0 bg-transparent">
+                                            {{ project.name }}
+                                        </button>
+                                    </form>
+                                </li>
+                            {% endfor %}
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'projects:list' %}">Manage projects</a>
+                            </li>
+                        </ul>
+                    </li>
+                {% endif %}
                 {% if user.is_authenticated %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle text-white"

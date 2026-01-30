@@ -298,16 +298,14 @@ class LoginViewTests(TestCase):
         self.assertTrue(user.is_authenticated)
         self.assertEqual(user, self.user)
 
-    def test_login_valid_credentials_redirects_to_home(self):
-        """Test that successful login redirects to home page"""
+    def test_login_valid_credentials_redirects_to_projects(self):
+        """Test that successful login redirects to projects page"""
         data = {
             "username": self.username,
             "password": self.password,
         }
         response = self.client.post(self.login_url, data)
-
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, "/")
+        self.assertRedirects(response, reverse("projects:list"))
 
     def test_login_invalid_username_shows_error(self):
         """Test that invalid username shows error"""
@@ -349,8 +347,7 @@ class LoginViewTests(TestCase):
         self.client.force_login(self.user)
 
         response = self.client.get(self.login_url)
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, "/")
+        self.assertRedirects(response, reverse("projects:list"))
 
     def test_login_redirects_to_next_parameter(self):
         """Test that login redirects to 'next' parameter if provided"""

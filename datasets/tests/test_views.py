@@ -1,4 +1,4 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
@@ -1097,7 +1097,7 @@ class CategorizeDatasetViewTests(TestCase):
         response = self.client.post(url)
 
         self.assertEqual(response.status_code, 302)
-        failure_mode = FailureMode.objects.get(
+        FailureMode.objects.get(
             project=self.project, name="Hallucination"
         )
         # Categories should not be automatically assigned

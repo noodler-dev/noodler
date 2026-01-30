@@ -5,20 +5,9 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h1>{{ project.name }}</h1>
-                <p class="text-muted mb-0 d-flex align-items-center gap-2">
-                    {{ project.organization.name }}
-                    {% if is_current_project %}<span class="badge bg-success">Current</span>{% endif %}
-                </p>
+                <p class="text-muted mb-0">{{ project.organization.name }}</p>
             </div>
             <div>
-                {% if not is_current_project %}
-                    <form method="post"
-                          action="{% url 'projects:switch' project.uid %}"
-                          class="d-inline">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-primary">Switch to This Project</button>
-                    </form>
-                {% endif %}
                 <a href="{% url 'projects:edit' project.uid %}"
                    class="btn btn-outline-secondary">Edit</a>
             </div>
