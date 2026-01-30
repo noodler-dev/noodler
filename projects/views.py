@@ -21,7 +21,6 @@ def project_list(request):
         .select_related("organization")
         .order_by("organization__name", "name")
     )
-    current_project_id = request.session.get("current_project_id")
 
     # Group projects by organization
     projects_by_org = OrderedDict()
@@ -33,7 +32,6 @@ def project_list(request):
 
     context = {
         "projects_by_org": projects_by_org,
-        "current_project_id": current_project_id,
     }
     return render(request, "projects/list.html", context)
 
