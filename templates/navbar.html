@@ -55,15 +55,23 @@
                             aria-labelledby="projectDropdown">
                             {% for project in user_projects %}
                                 <li>
-                                    <a class="dropdown-item {% if current_project and current_project.id == project.id %}active{% endif %}"
-                                       href="{% url 'projects:detail' project.uid %}">{{ project.name }}</a>
+                                    <form method="post"
+                                          action="{% url 'projects:switch' project.uid %}"
+                                          class="d-inline w-100">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                        <button type="submit"
+                                                class="dropdown-item w-100 text-start border-0 bg-transparent">
+                                            {{ project.name }}
+                                        </button>
+                                    </form>
                                 </li>
                             {% endfor %}
                             <li>
                                 <hr class="dropdown-divider">
                             </li>
                             <li>
-                                <a class="dropdown-item" href="{% url 'projects:list' %}">All projects</a>
+                                <a class="dropdown-item" href="{% url 'projects:list' %}">Manage projects</a>
                             </li>
                         </ul>
                     </li>

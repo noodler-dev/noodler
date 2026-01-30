@@ -229,7 +229,6 @@ def api_key_revoke(request, project_uid, key_uid):
 def project_switch(request, project_uid):
     """Switch the current project (stored in session)."""
     request.session["current_project_id"] = request.current_project.id
-    messages.success(request, f'Switched to project "{request.current_project.name}".')
 
     # Support redirect to a different page via 'next' parameter
     # Validate the URL to prevent open redirect vulnerabilities
