@@ -13,7 +13,9 @@ def current_project(request):
 
     current = get_current_project(request.user, request.session)
     projects = (
-        get_user_projects(request.user).select_related("organization").order_by("organization__name", "name")
+        get_user_projects(request.user)
+        .select_related("organization")
+        .order_by("organization__name", "name")
     )
 
     return {
