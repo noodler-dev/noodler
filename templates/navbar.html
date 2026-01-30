@@ -12,6 +12,14 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'projects:list' %}">Projects</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'traces:list' %}">Traces</a>
+                </li>
+            </ul>
+            <ul class="navbar-nav">
                 {% if user.is_authenticated and user_projects %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {% if current_project %}text-success{% endif %}"
@@ -26,7 +34,7 @@
                                 Select project
                             {% endif %}
                         </a>
-                        <ul class="dropdown-menu" aria-labelledby="projectDropdown">
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="projectDropdown">
                             {% for project in user_projects %}
                                 <li>
                                     <a class="dropdown-item {% if current_project and current_project.id == project.id %}active{% endif %}"
@@ -42,14 +50,6 @@
                         </ul>
                     </li>
                 {% endif %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'projects:list' %}">Projects</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'traces:list' %}">Traces</a>
-                </li>
-            </ul>
-            <ul class="navbar-nav">
                 {% if user.is_authenticated %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle text-white"
