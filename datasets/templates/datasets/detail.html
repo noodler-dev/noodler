@@ -14,6 +14,10 @@
                     <a href="{% url 'datasets:annotate' dataset.uid first_trace.uid %}"
                        class="btn btn-primary me-2">Review Annotations</a>
                 {% endif %}
+                {% if failure_modes_count > 0 %}
+                    <a href="{% url 'datasets:categories' dataset.uid %}"
+                       class="btn btn-outline-info me-2">View Categories ({{ failure_modes_count }})</a>
+                {% endif %}
                 <a href="{% url 'datasets:list' %}" class="btn btn-outline-secondary">Back to Datasets</a>
             </div>
         </div>
@@ -68,11 +72,56 @@
                             <dd class="col-sm-9">
                                 {{ dataset.updated_at|date:"M d, Y H:i:s" }}
                             </dd>
+                            {% if annotations_count > 0 or failure_modes_count > 0 %}
+                                <dt class="col-sm-3">Categories:</dt>
+                                <dd class="col-sm-9">
+                                    {% if failure_modes_count > 0 %}
+                                        <span class="badge bg-info">{{ failure_modes_count }} categories</span>
+                                    {% else %}
+                                        <span class="text-muted">No categories yet</span>
+                                    {% endif %}
+                                    {% if annotations_count > 0 %}
+                                        <span class="badge bg-secondary ms-2">{{ annotations_count }} annotated</span>
+                                    {% endif %}
+                                </dd>
+                            {% endif %}
                         </dl>
                     </div>
                 </div>
             </div>
         </div>
+        <!-- Categorization Actions -->
+        {% if annotations_count > 0 %}
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Categorization</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-3">Generate failure mode categories from your annotations using AI, or manage categories manually.</p>
+                            <div class="d-flex gap-2">
+                                <form method="post"
+                                      action="{% url 'datasets:categorize' dataset.uid %}"
+                                      class="d-inline"
+                                      onsubmit="return confirm('This will analyze all annotations and generate categories. Continue?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-primary">Generate Categories from Annotations</button>
+                                </form>
+                                <a href="{% url 'datasets:categories' dataset.uid %}"
+                                   class="btn btn-outline-primary">
+                                    {% if failure_modes_count > 0 %}
+                                        Manage Categories
+                                    {% else %}
+                                        Create Categories
+                                    {% endif %}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
         <!-- Traces List -->
         <div class="row">
             <div class="col-12">
