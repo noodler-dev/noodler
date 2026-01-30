@@ -12,6 +12,36 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
+                {% if user.is_authenticated and user_projects %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if current_project %}text-success{% endif %}"
+                           href="#"
+                           id="projectDropdown"
+                           role="button"
+                           data-bs-toggle="dropdown"
+                           aria-expanded="false">
+                            {% if current_project %}
+                                {{ current_project.name }}
+                            {% else %}
+                                Select project
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="projectDropdown">
+                            {% for project in user_projects %}
+                                <li>
+                                    <a class="dropdown-item {% if current_project and current_project.id == project.id %}active{% endif %}"
+                                       href="{% url 'projects:detail' project.uid %}">{{ project.name }}</a>
+                                </li>
+                            {% endfor %}
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'projects:list' %}">All projects</a>
+                            </li>
+                        </ul>
+                    </li>
+                {% endif %}
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'projects:list' %}">Projects</a>
                 </li>
