@@ -83,8 +83,6 @@ def project_detail(request, project_uid):
     context = {
         "project": request.current_project,
         "api_keys": api_keys,
-        "is_current_project": request.session.get("current_project_id")
-        == request.current_project.id,
     }
     return render(request, "projects/detail.html", context)
 
