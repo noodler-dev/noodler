@@ -34,7 +34,8 @@
                                 Select project
                             {% endif %}
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="projectDropdown">
+                        <ul class="dropdown-menu dropdown-menu-end"
+                            aria-labelledby="projectDropdown">
                             {% for project in user_projects %}
                                 <li>
                                     <a class="dropdown-item {% if current_project and current_project.id == project.id %}active{% endif %}"
