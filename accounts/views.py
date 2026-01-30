@@ -36,7 +36,7 @@ def signup_view(request):
 
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect("/")
+        return redirect("projects:list")
 
     # Get the 'next' parameter from query string or POST data
     next_url = request.GET.get("next") or request.POST.get("next")

@@ -163,5 +163,5 @@ CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "pyamqp://guest@localhos
 
 # Authentication URLs
 
-LOGIN_REDIRECT_URL = "/"
+LOGIN_REDIRECT_URL = "projects:list"
 LOGOUT_REDIRECT_URL = "/accounts/login/"
