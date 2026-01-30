@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Annotate: {{ dataset.name }}{% endblock %}
 {% block content %}
+    <style>
+        .progress-annotate { height: 25px; }
+    </style>
     <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
@@ -46,7 +49,7 @@
                                 <span class="text-muted">{{ current_trace_number }} / {{ total_traces }}</span>
                             {% endif %}
                         </div>
-                        <div class="progress" style="height: 25px;">
+                        <div class="progress progress-annotate">
                             {% if all_annotated %}
                                 <div class="progress-bar"
                                      role="progressbar"
