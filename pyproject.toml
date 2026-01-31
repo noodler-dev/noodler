@@ -1,7 +1,7 @@
 [project]
 name = "noodler"
 version = "0.1.0"
-description = "Add your description here"
+description = "Noodler is your home for understanding how your LLM-powered app behaves in the real world."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
